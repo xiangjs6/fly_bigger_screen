@@ -14,7 +14,7 @@ int initDebug(void)
 {
     if (SDL_Init( SDL_INIT_EVERYTHING ) < 0)
         return -1;
-    screen = SDL_SetVideoMode( 1280, 720, 32, SDL_SWSURFACE );
+    screen = SDL_SetVideoMode( 320, 180, 32, SDL_SWSURFACE );
     if(screen == NULL)
         return -1;
     return 0;

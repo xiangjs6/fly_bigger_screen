@@ -10,6 +10,7 @@
 #include "LoopArray.h"
 #include "HashMap.h"
 #include "ShareMemory.h"
+#include "Stack.h"
 
 #define BYTE_ALIGNED  __attribute__((packed, aligned(1)))
 #define SWAP(a, b) \

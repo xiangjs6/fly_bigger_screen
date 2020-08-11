@@ -56,8 +56,7 @@ typedef struct {
 int imageCopy(PImage dst_image, PImage src_image, Point dst_start_p, Point src_start_p, Rect size);
 int RoiImage(Roi *roi, PImage image, Point p_start, Rect size);
 int RoiCopy(Roi *dst_roi, Roi *src_roi);
-int imageDownSize(PImage src, PImage dst);
-int imageUpSize(PImage src, PImage dst);
+int imageDownSize(PImage src, PImage dst, int odd_even);
 int imageResize(PImage src, PImage dst, Rect size);
 
 void BGR2BGRA(PPixelBGR in, PPixelBGRA out, int rect_size);
