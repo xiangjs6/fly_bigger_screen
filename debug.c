@@ -42,3 +42,13 @@ void writetofile(PImage image)
     write(fd, image.data, PIXEL_LENGTH(RECT_LENGTH(image.size)));
     close(fd);
 }
+
+void openImage(PImage *image, char *path)
+{
+    Rect size = {.width = 1280, .height = 720};
+    void *buff = malloc(PIXEL_LENGTHBGRA(RECT_LENGTH(size)));
+    int fd = open(path, O_RDWR);
+    read(fd, buff, PIXEL_LENGTHBGRA(RECT_LENGTH(size)));
+    BGRA2BGR(buff, image->data, RECT_LENGTH(size));
+    close(fd);
+}

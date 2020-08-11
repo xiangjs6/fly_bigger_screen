@@ -48,6 +48,24 @@ void sig_term(int signo)
 #include "protocols/protocols.h"
 int main(void)
 {
+    initDebug();
+    PImage image, dst_1, dst_2;
+    dst_1.size = (Rect){.width = 640, .height = 360};
+    dst_1.data = malloc(PIXEL_LENGTH(RECT_LENGTH(dst_1.size)));
+    dst_2.size = (Rect){.width = 320, .height = 180};
+    dst_2.data = malloc(PIXEL_LENGTH(RECT_LENGTH(dst_2.size)));
+    image.size = (Rect){.width = 1280, .height = 720};
+    image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(image.size)));
+    openImage(&image, "/home/xjs/screen_picture/1");
+    int res = imageDownSize(image, dst_1);
+    res = imageDownSize(dst_1, dst_2);
+    //res = imageUpSize(dst_2, dst_1);
+    //res = imageUpSize(dst_1, image);
+    res = imageResize(dst_2, image, image.size);
+    showImage(image.data, RECT_LENGTH(image.size));
+    getchar();
+    destoryDebug();
+    return 0;
 /*    Pixel data[] = {1, 1, 1, 1, 0, 0, 0, 0, 4, 4, 4, 4,\
                     2, 2, 2, 2, 3, 3, 3, 3, 5, 5, 5, 5};
     PImage image;

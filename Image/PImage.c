@@ -51,6 +51,50 @@ int RoiCopy(Roi *dst_roi, Roi *src_roi)
     return 0;
 }
 
+int imageDownSize(PImage src, PImage dst)
+{
+    Rect size = {.width = src.size.width / 2, .height = src.size.height / 2};
+    if (size.width != dst.size.width || size.height != dst.size.height)
+        return -1;
+    PPixel p_src = src.data;
+    PPixel p_dst = dst.data;
+    for (int i = 0; i < size.height; i++) {
+        for (int j = 0; j < size.width; j++) {
+            *p_dst = *p_src;
+            p_src += 2;
+            p_dst++;
+        }
+        p_src += src.size.width;
+    }
+    return 0;
+}
+
+int imageUpSize(PImage src, PImage dst)
+{
+    Rect size = {.width = src.size.width * 2, .height = src.size.height * 2};
+    return imageResize(src, dst, size);
+}
+
+int imageResize(PImage src, PImage dst, Rect size)
+{
+    if (size.width != dst.size.width || size.height != dst.size.height)
+        return -1;
+    memset(dst.data, 0, PIXEL_LENGTH(RECT_LENGTH(size)));
+    float scala_width = (float)src.size.width / (float)size.width;
+    float scala_height = (float)src.size.height / (float)size.height;
+    PPixel p_dst = dst.data;
+    for (int i = 0; i < size.height; i++) {
+        for (int j = 0; j < size.width; j++) {
+            Point src_p;
+            src_p.x = scala_width * j;
+            src_p.y = scala_height * i;
+            *p_dst = src.data[src_p.x + src_p.y * src.size.width];
+            p_dst++;
+        }
+    }
+    return 0;
+}
+
 void BGR2BGRA(PPixelBGR in, PPixelBGRA out, int rect_size)
 {
     for (int i = 0; i < rect_size; i++) {

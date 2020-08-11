@@ -11,4 +11,5 @@ int initDebug(void);
 void destoryDebug(void);
 void showImage(void *ptr, size_t rect_size);
 void writetofile(PImage image);
+void openImage(PImage *image, char *path);
 #endif //FLY_BIGGER_SCREEN_DEBUG_H
