@@ -15,7 +15,7 @@
 #include "debug.h"
 #include "protocols/transmission.h"
 #include <signal.h>
-#include "Image/imagePyrTree.h"
+#include "Image/ImagePyrTree.h"
 
 
 int run = 1;
@@ -55,15 +55,31 @@ int main(void)
     image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(image.size)));
     openImage(&image, "/home/xjs/screen_picture/1");
     ImagePyrTree tree = initImagePyrTree(2);
+    ImagePyrTree merge = initImagePyrTree(2);
+    ImagePyrDataType *p;
+    ImagePyramid out;
+    //splitPyramid(image, &out);
+
     imagePyramid(&tree, image);
-    ImagePyrDataType n;
-    n.image.size = (Rect){.width = 320, .height = 180};
-    n.image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(n.image.size)));
-    popStack(&tree.stack, &n);
-    popStack(&tree.stack, &n);
-    popStack(&tree.stack, &n);
-    popStack(&tree.stack, &n);
-    showImage(n.image.data, RECT_LENGTH(n.image.size));
+    ImagePyrDataType pyramid;
+    pyramid.image.size = (Rect){.width = 320, .height = 180};
+    pyramid.image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(pyramid.image.size)));
+    StackDataType data = {.p_val = &pyramid};
+    popStack(&tree.stack, &data);
+    putPyramid(&merge, pyramid);
+    popStack(&tree.stack, &data);
+    putPyramid(&merge, pyramid);
+
+    p = merge.stack.head->data.p_val;
+    showImage(p->image.data, RECT_LENGTH(p->image.size));
+
+    popStack(&tree.stack, &data);
+    putPyramid(&merge, pyramid);
+    popStack(&tree.stack, &data);
+    putPyramid(&merge, pyramid);
+
+    p = merge.stack.head->data.p_val;
+    showImage(p->image.data, RECT_LENGTH(p->image.size));
     getchar();
     destoryDebug();
     return 0;

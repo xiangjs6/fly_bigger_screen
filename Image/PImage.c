@@ -30,7 +30,7 @@ int RoiImage(Roi *roi, PImage image, Point p_start, Rect size)
 {
     if(p_start.x < 0 || p_start.y < 0)
         return -1;
-    if(p_start.x + size.width >= image.size.width || p_start.y + size.height >= image.size.height)
+    if(p_start.x + size.width > image.size.width || p_start.y + size.height > image.size.height)
         return -1;
     roi->size = size;
     PPixel p_image_data = image.data + image.size.width * p_start.y + p_start.x;
@@ -51,17 +51,19 @@ int RoiCopy(Roi *dst_roi, Roi *src_roi)
     return 0;
 }
 
-int imageDownSize(PImage src, PImage dst, int odd_even)
-{
-    odd_even %= 2;
+int imageDownSize(PImage src, PImage dst, int x_odd_even, int y_odd_even)
+                                                                                                                                            {
+    x_odd_even %= 2;
+    y_odd_even %= 2;
     Rect size = {.width = src.size.width / 2, .height = src.size.height / 2};
-    if (!odd_even) {
+    if (!x_odd_even)
         size.width += src.size.width % 2;
+    if (!y_odd_even)
         size.height += src.size.height % 2;
-    }
+
     if (size.width != dst.size.width || size.height != dst.size.height)
         return -1;
-    PPixel p_src = src.data + odd_even * src.size.width + odd_even;
+    PPixel p_src = src.data + y_odd_even * src.size.width + x_odd_even;
     PPixel p_dst = dst.data;
     for (int i = 0; i < size.height; i++) {
         for (int j = 0; j < size.width; j++) {

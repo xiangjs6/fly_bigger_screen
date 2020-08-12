@@ -10,7 +10,7 @@ static int image_malloc(StackDataType *data);
 static void image_free(StackDataType *data);
 StackOpts opts = {.malloc = image_malloc, .free = image_free, .copy = image_copy};
 
-static int generateHelper(StackHead *stack, PImage image, int layer, int odd_even);
+static int generateHelper(StackHead *stack, PImage image, int layer);
 
 Rect image_pyr_size;
 
@@ -29,44 +29,94 @@ void destoryImagePyrTree(ImagePyrTree *tree)
 
 int imagePyramid(ImagePyrTree *tree, PImage image)
 {
-    if (generateHelper(&tree->stack, image, tree->layer, 0) < 0) {
+    if (generateHelper(&tree->stack, image, tree->layer) < 0 ) {
         cleanStack(&tree->stack);
         return -1;
     }
     return 0;
 }
 
-static int generateHelper(StackHead *stack, PImage image, int layer, int odd_even)
+int putPyramid(ImagePyrTree *tree, ImagePyrDataType pyramid)
+{
+    if (tree->stack.size < 4) {
+        return putStack(&tree->stack, (StackDataType){.p_val = &pyramid});
+    } else {
+        while (tree->stack.size >= 4)
+        {
+            ImagePyrDataType all_pyramid[4];
+            for (int i = 3; i >= 0; i--) {
+                StackDataType data = {.p_val = &all_pyramid[i]};
+                popStack(&tree->stack, &data);
+            }
+        }
+    }
+}
+
+static int generateHelper(StackHead *stack, PImage image, int layer)
 {
     if (!layer) {
-        ImagePyrDataType node;
-        node.image = image;
-        node.odd_even = odd_even % 2;
-        node.node_layer = layer;
-        image_pyr_size = image.size;
-        putStack(stack, (StackDataType){.p_val = &node});
+        ImagePyrDataType data;
+        data.image = image;
+        data.node_layer = layer;
+        if (putStack(stack, (StackDataType) {.p_val = &data}) < 0)
+            return -1;
         return 0;
     }
-    int res = 0;
-    Rect size = {.width = image.size.width / 2, .height = image.size.height / 2};
-    if (!odd_even) {
-        size.width += image.size.width % 2;
-        size.height += image.size.height % 2;
-    }
-    PImage dst_image;
-    dst_image.size = size;
-    dst_image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(size)));
-    if (!dst_image.data)
+
+    ImagePyramid pyramid;
+    if (splitPyramid(image, &pyramid) < 0)
         return -1;
-    if ((res = imageDownSize(image, dst_image, odd_even)) < 0)
-        goto err;
-    if ((res = generateHelper(stack, dst_image, layer - 1, odd_even)) < 0)
-        goto err;
-    if ((res = generateHelper(stack, dst_image, layer - 1, odd_even + 1)) < 0)
-        goto err;
-    err:
-    free(dst_image.data);
-    return res;
+    for (int i = 0; i < 4; i++) {
+        if (generateHelper(stack, pyramid.image[i], layer - 1) < 0)
+            return -1;
+    }
+    return 0;
+}
+
+int mergePyramid(ImagePyramid pyramid, PImage *out)
+{
+}
+
+int splitPyramid(PImage image, ImagePyramid *out)
+{
+    Rect size;
+    //x偶 y偶
+    size.width = image.size.width / 2 + image.size.width % 2;
+    size.height = image.size.height / 2 + image.size.height % 2;
+    out->image[0].data = malloc(PIXEL_LENGTH(RECT_LENGTH(size)));
+    if (!out->image[0].data)
+        return -1;
+    out->image[0].size = size;
+    imageDownSize(image, out->image[0], 0, 0);
+
+    //x偶 y奇
+    size.width = image.size.width / 2 + image.size.width % 2;
+    size.height = image.size.height / 2;
+    out->image[1].data = malloc(PIXEL_LENGTH(RECT_LENGTH(size)));
+    if (!out->image[1].data)
+        return -1;
+    out->image[1].size = size;
+    imageDownSize(image, out->image[1], 0, 1);
+
+    //x奇 y偶
+    size.width = image.size.width / 2;
+    size.height = image.size.height / 2 + image.size.height % 2;
+    out->image[2].data = malloc(PIXEL_LENGTH(RECT_LENGTH(size)));
+    if (!out->image[2].data)
+        return -1;
+    out->image[2].size = size;
+    imageDownSize(image, out->image[2], 1, 0);
+
+    //x奇 y奇
+    size.width = image.size.width / 2;
+    size.height = image.size.height / 2;
+    out->image[3].data = malloc(PIXEL_LENGTH(RECT_LENGTH(size)));
+    if (!out->image[3].data)
+        return -1;
+    out->image[3].size = size;
+    imageDownSize(image, out->image[3], 1, 1);
+
+    return 0;
 }
 
 static void image_copy(StackDataType *src, StackDataType *dst)
@@ -74,7 +124,6 @@ static void image_copy(StackDataType *src, StackDataType *dst)
     ImagePyrDataType *p_pyr_src = src->p_val;
     ImagePyrDataType *p_pyr_dst = dst->p_val;
     p_pyr_dst->node_layer = p_pyr_src->node_layer;
-    p_pyr_dst->odd_even = p_pyr_src->odd_even;
     imageCopy(p_pyr_dst->image, p_pyr_src->image, ORIGIN_POINT, ORIGIN_POINT, p_pyr_src->image.size);
 }
 
