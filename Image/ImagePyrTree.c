@@ -79,7 +79,17 @@ int mergePyramid(ImagePyramid pyramid, PImage *out)
 
 int splitPyramid(PImage image, ImagePyramid *out)
 {
+    static const Point odd_even[4] = {{.x = 0, .y = 1}, {.x = 0, .y = 1}, {.x = 1, .y = 0}, {.x = 1, .y = 1}};
     Rect size;
+    for (int i = 0; i < 4; i++) {
+        size.width = image.size.width / 2 + odd_even[i].x * (image.size.width % 2);
+        size.height = image.size.height / 2 + odd_even[i].y * (image.size.height % 2);
+        out->image[i].data = malloc(PIXEL_LENGTH(RECT_LENGTH(size)));
+        if (!out->image[i].data)
+            return -1;
+        out->image[i].size = size;
+        imageDownSize(image, out->image[i], odd_even[i].x, odd_even[i].y);
+    }
     //x偶 y偶
     size.width = image.size.width / 2 + image.size.width % 2;
     size.height = image.size.height / 2 + image.size.height % 2;
