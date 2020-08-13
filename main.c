@@ -74,8 +74,9 @@ int main(void)
         putPyramid(&merge, pyramid);
     }
 
-    p = merge.stack.head->data.p_val;
+    p = merge.max_size_pyramid;
     int a = memcmp(src_image.data, p->image.data, PIXEL_LENGTH(RECT_LENGTH(src_image.size)));
+    printf("%d\n", a);
     showImage(p->image.data, RECT_LENGTH(p->image.size));
     getchar();
     destoryDebug();

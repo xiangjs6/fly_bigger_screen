@@ -6,6 +6,7 @@
 #define FLY_BIGGER_SCREEN_IMAGECODE_H
 #include <stdbool.h>
 #include "ImageMesh.h"
+#include "ImagePyrTree.h"
 
 struct code_array_type {
     bool is_used;

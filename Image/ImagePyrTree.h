@@ -13,13 +13,13 @@ typedef struct ImagePyramid {
 
 typedef struct ImagePyrDataType {
     PImage image;
-    int odd_even_num;
     int node_layer;
 } ImagePyrDataType;
 
 typedef struct ImagePyrTree {
     StackHead stack;
     int layer;
+    ImagePyrDataType *max_size_pyramid;
 } ImagePyrTree;
 
 ImagePyrTree initImagePyrTree(int layer);

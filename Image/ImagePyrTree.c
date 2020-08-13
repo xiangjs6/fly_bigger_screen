@@ -10,7 +10,9 @@ static int image_malloc(StackDataType *data);
 static void image_free(StackDataType *data);
 StackOpts opts = {.malloc = image_malloc, .free = image_free, .copy = image_copy};
 
-static int generateHelper(StackHead *stack, PImage image, int layer, int odd_even_num);
+static int generateHelper(StackHead *stack, PImage image, int layer);
+static void imageSplitSize(PImage src, PImage dst, int x_odd_even, int y_odd_even);
+static void imageMergeSize(PImage src, PImage dst, int x_odd_even, int y_odd_even);
 
 Rect image_pyr_size;
 
@@ -19,17 +21,19 @@ ImagePyrTree initImagePyrTree(int layer)
     ImagePyrTree tree;
     tree.stack = initStack(opts);
     tree.layer = layer;
+    tree.max_size_pyramid = NULL;
     return tree;
 }
 
 void destoryImagePyrTree(ImagePyrTree *tree)
 {
     destoryStack(&tree->stack);
+    tree->max_size_pyramid = NULL;
 }
 
 int imagePyramid(ImagePyrTree *tree, PImage image)
 {
-    if (generateHelper(&tree->stack, image, tree->layer, 0) < 0 ) {
+    if (generateHelper(&tree->stack, image, tree->layer) < 0 ) {
         cleanStack(&tree->stack);
         return -1;
     }
@@ -40,19 +44,25 @@ int putPyramid(ImagePyrTree *tree, ImagePyrDataType pyramid)
 {
     int cur_index = pyramid.node_layer;
     int i = 4, res = 0;
+    int max_size_layer = tree->max_size_pyramid == NULL ? -1 : tree->max_size_pyramid->node_layer;
     StackDataType data;
     ImagePyramid image_pyramid;
     ImagePyrDataType all_pyramid[4];
+    memset(all_pyramid, 0, sizeof(pyramid.image));
     ImagePyrDataType new_image_pyr;
 
     image_pyr_size = pyramid.image.size;
-    if (putStack(&tree->stack, (StackDataType){.p_val = &pyramid}) < 0)
+    if (putStack(&tree->stack, (StackDataType){.p_val = &pyramid}) < 0) {
         return -1;
+    }
+
     while (tree->stack.size >= 4)
     {
         for (i = 0; i < 4; i++) {
             ImagePyrDataType *p_pyr = getStack(&tree->stack, STACK_TOP)->p_val;
             all_pyramid[i].image.size = p_pyr->image.size;
+            if (!all_pyramid[i].image.data)
+                free(all_pyramid[i].image.data);
             all_pyramid[i].image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(p_pyr->image.size)));
             if (!all_pyramid[i].image.data) {
                 i--;
@@ -73,6 +83,7 @@ int putPyramid(ImagePyrTree *tree, ImagePyrDataType pyramid)
 
         image_pyr_size = new_image_pyr.image.size;
         int _res = putStack(&tree->stack, data);
+
         free(new_image_pyr.image.data);
         if (_res < 0) {
             res = -2;
@@ -100,17 +111,20 @@ ret:
             popStack(&tree->stack, NULL);
             break;
     }
-
+    for (i = 0; i < tree->stack.size; i++) {
+        ImagePyrDataType* p = getStack(&tree->stack, i)->p_val;
+        if (max_size_layer <= p->node_layer)
+            tree->max_size_pyramid = p;
+    }
     return res;
 }
 
-static int generateHelper(StackHead *stack, PImage image, int layer, int odd_even_num)
+static int generateHelper(StackHead *stack, PImage image, int layer)
 {
     if (!layer) {
         ImagePyrDataType data;
         data.image = image;
         data.node_layer = layer;
-        data.odd_even_num = odd_even_num;
         image_pyr_size = image.size;
         if (putStack(stack, (StackDataType) {.p_val = &data}) < 0)
             return -1;
@@ -121,8 +135,9 @@ static int generateHelper(StackHead *stack, PImage image, int layer, int odd_eve
     if (splitPyramid(image, &pyramid) < 0)
         return -1;
     for (int i = 0; i < 4; i++) {
-        if (generateHelper(stack, pyramid.image[i], layer - 1, i) < 0)
+        if (generateHelper(stack, pyramid.image[i], layer - 1) < 0)
             return -1;
+        free(pyramid.image[i].data);
     }
     return 0;
 }
@@ -139,16 +154,9 @@ int mergePyramid(ImagePyramid pyramid, PImage *out)
     out->data = malloc(PIXEL_LENGTH(RECT_LENGTH(size)));
     if (!out->data)
         return -1;
-    for (int k = 0; k < 4; k++) {
-        PImage *p_src = &pyramid.image[k];
-        for (int i = 0; i < p_src->size.height; i++) {
-            for (int j = 0; j < p_src->size.width; j++) {
-                int row = i * 2 + odd_even[k].y;
-                int col = j * 2 + odd_even[k].x;
-                out->data[row * size.width + col] = p_src->data[i * p_src->size.width + j];
-            }
-        }
-    }
+    for (int k = 0; k < 4; k++)
+        imageMergeSize(pyramid.image[k], *out, odd_even[k].x, odd_even[k].y);
+
     return 0;
 }
 
@@ -163,7 +171,7 @@ int splitPyramid(PImage image, ImagePyramid *out)
         if (!out->image[i].data)
             goto err;
         out->image[i].size = size;
-        imageDownSize(image, out->image[i], odd_even[i].x, odd_even[i].y);
+        imageSplitSize(image, out->image[i], odd_even[i].x, odd_even[i].y);
     }
     return 0;
 err:
@@ -172,12 +180,39 @@ err:
     return -1;
 }
 
+static void imageSplitSize(PImage src, PImage dst, int x_odd_even, int y_odd_even)
+{
+    Rect size = dst.size;
+    PPixel p_src = src.data + y_odd_even * src.size.width + x_odd_even;
+    PPixel p_dst = dst.data;
+    for (int i = 0; i < size.height; i++) {
+        for (int j = 0; j < size.width; j++) {
+            *p_dst = *p_src;
+            p_src += 2;
+            p_dst++;
+        }
+        p_src += src.size.width;
+    }
+}
+
+static void imageMergeSize(PImage src, PImage dst, int x_odd_even, int y_odd_even)
+{
+    Rect size = dst.size;
+    PImage *p_src = &src;
+    for (int i = 0; i < p_src->size.height; i++) {
+        for (int j = 0; j < p_src->size.width; j++) {
+            int row = i * 2 + y_odd_even;
+            int col = j * 2 + x_odd_even;
+            dst.data[row * size.width + col] = p_src->data[i * p_src->size.width + j];
+        }
+    }
+}
+
 static void image_copy(StackDataType *src, StackDataType *dst)
 {
     ImagePyrDataType *p_pyr_src = src->p_val;
     ImagePyrDataType *p_pyr_dst = dst->p_val;
     p_pyr_dst->node_layer = p_pyr_src->node_layer;
-    p_pyr_dst->odd_even_num = p_pyr_src->odd_even_num;
     imageCopy(p_pyr_dst->image, p_pyr_src->image, ORIGIN_POINT, ORIGIN_POINT, p_pyr_src->image.size);
 }
 

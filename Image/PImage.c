@@ -51,35 +51,14 @@ int RoiCopy(Roi *dst_roi, Roi *src_roi)
     return 0;
 }
 
-int imageDownSize(PImage src, PImage dst, int x_odd_even, int y_odd_even)
-                                                                                                                                            {
-    x_odd_even %= 2;
-    y_odd_even %= 2;
-    Rect size = {.width = src.size.width / 2, .height = src.size.height / 2};
-    if (!x_odd_even)
-        size.width += src.size.width % 2;
-    if (!y_odd_even)
-        size.height += src.size.height % 2;
-
-    if (size.width != dst.size.width || size.height != dst.size.height)
-        return -1;
-    PPixel p_src = src.data + y_odd_even * src.size.width + x_odd_even;
-    PPixel p_dst = dst.data;
-    for (int i = 0; i < size.height; i++) {
-        for (int j = 0; j < size.width; j++) {
-            *p_dst = *p_src;
-            p_src += 2;
-            p_dst++;
-        }
-        p_src += src.size.width;
-    }
-    return 0;
-}
-
 int imageResize(PImage src, PImage dst, Rect size)
 {
     if (size.width != dst.size.width || size.height != dst.size.height)
         return -1;
+    if (size.width == src.size.width && size.height == src.size.height) {
+        imageCopy(dst, src, ORIGIN_POINT, ORIGIN_POINT, size);
+        return 0;
+    }
     memset(dst.data, 0, PIXEL_LENGTH(RECT_LENGTH(size)));
     float scala_width = (float)src.size.width / (float)size.width;
     float scala_height = (float)src.size.height / (float)size.height;
