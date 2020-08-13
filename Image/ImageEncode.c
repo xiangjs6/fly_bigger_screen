@@ -32,6 +32,8 @@ static LoopArrayHead loop_array;
 static ImageHashMap image_map;
 static MeshHead **mesh_head_array;
 
+static struct pyramid_code *pyramids_link = NULL;
+
 void image_encode_proccess(int sockfd)
 {
     if(init() < 0)
@@ -56,6 +58,8 @@ void image_encode_proccess(int sockfd)
         ImageVal *mesh_mark = shareMalloc(RECT_LENGTH(next_mesh->size) * sizeof(ImageVal), AUTO_KEY);
         //ImageVal mesh_mark[next_mesh->size.height][next_mesh->size.width];
         memset(mesh_mark, -1, sizeof(RECT_LENGTH(next_mesh->size)) * sizeof(ImageVal));
+
+        struct code_array_type old_code_element = code_element;
         MeshHead old_next_mesh = *next_mesh;
 
         code_element.is_used = true;
@@ -67,10 +71,17 @@ void image_encode_proccess(int sockfd)
                         continue;
                     Mesh *mesh = getMeshHead(next_mesh, i, j);
                     ImageKey key = {.key = mesh->image.data, .len = PIXEL_LENGTH(RECT_LENGTH(mesh->image.size))};
-                    if (delImageHashMap(&image_map, key) < 0) {
-                        printf("2\n");
+                    if (delImageHashMap(&image_map, key) < 0)
                         return;
-                    }
+                    //删除节点
+                    struct pyramid_code *node = code_element.pyramid_trees[mesh_num_size.width * i + j];
+                    node->next->pre = node->pre;
+                    if (!node->pre)
+                        pyramids_link = node->next;
+                    else
+                        node->pre->next = node->next;
+                    destoryImagePyrTree(&node->tree);
+                    free(node);
                 }
             }
         }//if(new_array_type.is_used)
@@ -82,14 +93,8 @@ void image_encode_proccess(int sockfd)
                 ImageVal val = {.index = array_index, .h_mesh_point = (Point) {.x = j, .y = i}};
                 int res = getImageHashMap(&image_map, key, &val);
                 //int res = putImageHashMap(&image_map, key, val, &old_val);
-                if (res == 1) {
-                    struct code_array_type *old_element = getLoopArray(&loop_array, val.index).p_val;
-                    old_element->mesh_updata_mark[mesh_num_size.width * val.h_mesh_point.y +
-                                                  val.h_mesh_point.x] = true;
-                } else if (res < 0) {
-                    printf("3\n");
+                if (res < 0)
                     return;
-                }
                 mesh_mark[i * old_next_mesh.size.width + j] = val;
             }
         }
@@ -101,11 +106,24 @@ void image_encode_proccess(int sockfd)
                 ImageVal val = {.index = array_index, .h_mesh_point = (Point) {.x = j, .y = i}};
                 ImageVal old_val = val;
                 int res = putImageHashMap(&image_map, key, val, &old_val);
+                int index = mesh_num_size.width * old_val.h_mesh_point.y + old_val.h_mesh_point.x;
                 if (res == 1) {
                     struct code_array_type *old_element = getLoopArray(&loop_array, old_val.index).p_val;
-                    old_element->mesh_updata_mark[mesh_num_size.width * old_val.h_mesh_point.y +
-                                                  old_val.h_mesh_point.x] = true;
-                }
+                    old_code_element.pyramid_trees[index] = old_element->pyramid_trees[index];
+                    old_element->mesh_updata_mark[index] = true;
+                } else if(res == 0) {
+                    //创建节点，并入链表
+                    struct pyramid_code *node = malloc(sizeof(struct pyramid_code));
+                    node->next = pyramids_link;
+                    node->tree = initImagePyrTree(2);
+                    node->pre = NULL;
+                    if (pyramids_link)
+                        pyramids_link->pre = node;
+                    pyramids_link = node;
+
+                    old_code_element.pyramid_trees[index] = node;
+                } else
+                    return;
             }
         }
 
@@ -131,7 +149,7 @@ static int init(void)
 {
     mesh_num_size = (Rect){40, 45};
     mesh_size = (Rect){32, 16};
-
+    pyramids_link = NULL;
 
     screen_image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(((Rect){1280, 720}))));
     if(!screen_image.data)

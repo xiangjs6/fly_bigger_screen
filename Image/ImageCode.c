@@ -30,6 +30,7 @@ int init_code_array_type(struct code_array_type *p_code_array)
     if(!p_code_array->mesh_updata_mark)
         return -1;
     memset(p_code_array->mesh_updata_mark, false, sizeof(bool) * RECT_LENGTH(p_mesh->size));
+    p_code_array->pyramid_trees = malloc(RECT_LENGTH(p_mesh->size) * sizeof(struct pyramid_code*));
     return 0;
 }
 
@@ -41,6 +42,7 @@ void destory_code_array_type(struct code_array_type *p_code_array)
     destoryShareMesh(p_mesh);
     shareFree(p_mesh);
     free(p_code_array->mesh_updata_mark);
+    free(p_code_array->pyramid_trees);
 }
 
 static void code_copy(LoopArrayDataType *src, LoopArrayDataType *dst)
@@ -51,6 +53,7 @@ static void code_copy(LoopArrayDataType *src, LoopArrayDataType *dst)
     SWAP(*src_mesh, *dst_mesh);
     SWAP(src_code_array->mesh_updata_mark, dst_code_array->mesh_updata_mark);
     SWAP(src_code_array->is_used, dst_code_array->is_used);
+    SWAP(src_code_array->pyramid_trees, dst_code_array->pyramid_trees);
 }
 
 static int code_malloc(LoopArrayDataType *data)

@@ -49,38 +49,6 @@ void sig_term(int signo)
 #include "protocols/protocols.h"
 int main(void)
 {
-    initDebug();
-    PImage src_image;
-    PImage image;
-    image.size = (Rect){.width = 1280, .height = 720};
-    src_image.size = image.size;
-    image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(image.size)));
-    src_image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(image.size)));
-    openImage(&image, "/home/xjs/screen_picture/1");
-    imageCopy(src_image, image, ORIGIN_POINT, ORIGIN_POINT, image.size);
-    ImagePyrTree tree = initImagePyrTree(2);
-    ImagePyrTree merge = initImagePyrTree(2);
-    ImagePyrDataType *p;
-    ImagePyramid out;
-    //splitPyramid(image, &out);
-
-    imagePyramid(&tree, image);
-    ImagePyrDataType pyramid;
-    pyramid.image.size = (Rect){.width = 320, .height = 180};
-    pyramid.image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(pyramid.image.size)));
-    StackDataType data = {.p_val = &pyramid};
-    for (int i = 0; i < 16; i++) {
-        popStack(&tree.stack, &data);
-        putPyramid(&merge, pyramid);
-    }
-
-    p = merge.max_size_pyramid;
-    int a = memcmp(src_image.data, p->image.data, PIXEL_LENGTH(RECT_LENGTH(src_image.size)));
-    printf("%d\n", a);
-    showImage(p->image.data, RECT_LENGTH(p->image.size));
-    getchar();
-    destoryDebug();
-    return 0;
 /*    Pixel data[] = {1, 1, 1, 1, 0, 0, 0, 0, 4, 4, 4, 4,\
                     2, 2, 2, 2, 3, 3, 3, 3, 5, 5, 5, 5};
     PImage image;
@@ -93,21 +61,22 @@ int main(void)
     imageCopy(d_image, image, (Point){0, 0}, (Point){0, 0}, d_image.size);
     return 0;*/
     int fd[2];
-    //int pid = fork();
     int pid = 1;
+    pid = fork();
     socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
 
     if (initShareMemory(1024000000) < 0)
         return -1;
     if (pid != 0) {
         pid = fork();
-        if (pid != 0) {
+        if (pid == 0) {
             printf("sever_transmission_proccess:%d\n", getpid());
             sever_transmission_proccess(fd[0]);
             printf("sever_transmission_proccess:awsl\n");
         } else {
             printf("image_encode_proccess:%d\n", getpid());
             image_encode_proccess(fd[1]);
+            printf("image_encode_proccess:awsl\n");
         }
     } else {
         pid = fork();
@@ -122,6 +91,7 @@ int main(void)
                 return -1;
             printf("image_decode_proccess:%d\n", getpid());
             image_decode_proccess(fd[1]);
+            printf("image_decode_proccess:awsl\n");
             destoryDebug();
         }
     }
