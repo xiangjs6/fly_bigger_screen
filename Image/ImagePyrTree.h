@@ -13,6 +13,7 @@ typedef struct ImagePyramid {
 
 typedef struct ImagePyrDataType {
     PImage image;
+    int odd_even_num;
     int node_layer;
 } ImagePyrDataType;
 

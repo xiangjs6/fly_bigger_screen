@@ -50,10 +50,14 @@ void sig_term(int signo)
 int main(void)
 {
     initDebug();
+    PImage src_image;
     PImage image;
     image.size = (Rect){.width = 1280, .height = 720};
+    src_image.size = image.size;
     image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(image.size)));
+    src_image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(image.size)));
     openImage(&image, "/home/xjs/screen_picture/1");
+    imageCopy(src_image, image, ORIGIN_POINT, ORIGIN_POINT, image.size);
     ImagePyrTree tree = initImagePyrTree(2);
     ImagePyrTree merge = initImagePyrTree(2);
     ImagePyrDataType *p;
@@ -65,20 +69,13 @@ int main(void)
     pyramid.image.size = (Rect){.width = 320, .height = 180};
     pyramid.image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(pyramid.image.size)));
     StackDataType data = {.p_val = &pyramid};
-    popStack(&tree.stack, &data);
-    putPyramid(&merge, pyramid);
-    popStack(&tree.stack, &data);
-    putPyramid(&merge, pyramid);
+    for (int i = 0; i < 16; i++) {
+        popStack(&tree.stack, &data);
+        putPyramid(&merge, pyramid);
+    }
 
     p = merge.stack.head->data.p_val;
-    showImage(p->image.data, RECT_LENGTH(p->image.size));
-
-    popStack(&tree.stack, &data);
-    putPyramid(&merge, pyramid);
-    popStack(&tree.stack, &data);
-    putPyramid(&merge, pyramid);
-
-    p = merge.stack.head->data.p_val;
+    int a = memcmp(src_image.data, p->image.data, PIXEL_LENGTH(RECT_LENGTH(src_image.size)));
     showImage(p->image.data, RECT_LENGTH(p->image.size));
     getchar();
     destoryDebug();

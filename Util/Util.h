@@ -19,6 +19,9 @@ do {\
     (a) = (b);\
     (b) = _temp;\
 } while(0)
+
+#define MAX(x, y) (((x) > (y)) ? (x) : (y))
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 uint16_t checksum(uint16_t *data, size_t len);
 
 typedef unsigned char byte;

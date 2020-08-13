@@ -7,6 +7,9 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+
+#define STACK_TOP 0
+
 typedef union {void* p_val; int64_t val;} StackDataType;
 typedef struct StackHead StackHead;
 typedef struct StackOpts StackOpts;
