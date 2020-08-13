@@ -82,6 +82,7 @@ void image_encode_proccess(int sockfd)
                         node->pre->next = node->next;
                     destoryImagePyrTree(&node->tree);
                     free(node);
+                    code_element.pyramid_trees[mesh_num_size.width * i + j] = NULL;
                 }
             }
         }//if(new_array_type.is_used)

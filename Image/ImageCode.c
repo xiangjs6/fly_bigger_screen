@@ -31,6 +31,9 @@ int init_code_array_type(struct code_array_type *p_code_array)
         return -1;
     memset(p_code_array->mesh_updata_mark, false, sizeof(bool) * RECT_LENGTH(p_mesh->size));
     p_code_array->pyramid_trees = malloc(RECT_LENGTH(p_mesh->size) * sizeof(struct pyramid_code*));
+    if (!p_code_array->pyramid_trees)
+        return -1;
+    memset(p_code_array->pyramid_trees, 0, RECT_LENGTH(p_mesh->size) * sizeof(struct pyramid_code*));
     return 0;
 }
 
