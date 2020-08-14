@@ -31,6 +31,7 @@ static MeshHead *next_mesh;
 static LoopArrayHead loop_array;
 static ImageHashMap image_map;
 static MeshHead **mesh_head_array;
+static ImagePyrDataType **pyramids_array;
 
 static struct pyramid_code *pyramids_link = NULL;
 
@@ -75,14 +76,7 @@ void image_encode_proccess(int sockfd)
                         return;
                     //删除节点
                     struct pyramid_code *node = code_element.pyramid_trees[mesh_num_size.width * i + j];
-                    if (node->next)
-                        node->next->pre = node->pre;
-                    if (!node->pre)
-                        pyramids_link = node->next;
-                    else
-                        node->pre->next = node->next;
-                    destoryImagePyrTree(&node->tree);
-                    free(node);
+                    del_pyramid_node(&pyramids_link, node);
                     code_element.pyramid_trees[mesh_num_size.width * i + j] = NULL;
                 }
             }
@@ -116,18 +110,39 @@ void image_encode_proccess(int sockfd)
                     old_element->mesh_updata_mark[old_index] = true;
                 } else if(res == 0) {
                     //创建节点，并入链表
-                    struct pyramid_code *node = malloc(sizeof(struct pyramid_code));
-                    node->next = pyramids_link;
-                    node->tree = initImagePyrTree(2);
-                    node->pre = NULL;
-                    if (pyramids_link)
-                        pyramids_link->pre = node;
-                    pyramids_link = node;
+                    struct pyramid_code *node = creat_pyramid_node(&pyramids_link);
+                    old_code_element.pyramid_trees[index] = node;
                     //生成图像金字塔
                     imagePyramid(&node->tree, mesh->image);
-                    old_code_element.pyramid_trees[index] = node;
                 } else
                     return;
+            }
+        }
+
+        //准备传输数据
+        pyramids_array = shareMalloc(sizeof(ImagePyrDataType*) * RECT_LENGTH(mesh_num_size), AUTO_KEY);
+        if (!pyramids_array)
+            break;
+        for (int i = 0; i < mesh_num_size.height; i++) {
+            for (int j = 0; j < mesh_num_size.width; j++) {
+                int index = i * mesh_num_size.width + j;
+                if (!old_code_element.pyramid_trees[index]->tree.stack.size) {
+                    pyramids_array[index] = NULL;
+                    continue;
+                }
+                ImagePyrDataType *p = getStack(&old_code_element.pyramid_trees[index]->tree.stack, STACK_TOP)->p_val;
+                pyramids_array[index] = shareMalloc(sizeof(ImagePyrDataType), ANONYMOUS_KEY);
+                if (!pyramids_array[index])
+                    return;
+
+                *pyramids_array[index] = *p;
+                pyramids_array[index]->image.data = shareMalloc(PIXEL_LENGTH(RECT_LENGTH(p->image.size)), ANONYMOUS_KEY);
+                if (!pyramids_array[index]->image.data)
+                    return;
+
+                StackDataType data;
+                data.p_val = &pyramids_array[index];
+                popStack(&old_code_element.pyramid_trees[index]->tree.stack, &data);
             }
         }
 
@@ -136,8 +151,9 @@ void image_encode_proccess(int sockfd)
         response->seq = message.requst_encode.seq;
         response->mesh_mark_key = getShareKey(mesh_mark);
         response->mesh_num_size = old_next_mesh.size;
-        response->mesh_head_array_key = getShareKey(mesh_head_array);
-        response->mesh_size = mesh_size;
+        //response->mesh_head_array_key = getShareKey(mesh_head_array);
+        //response->mesh_size = mesh_size;
+        response->pyramids_key = getShareKey(pyramids_array);
         response->curent_array_index = array_index;
         write(sockfd, &message, sizeof(message));
 

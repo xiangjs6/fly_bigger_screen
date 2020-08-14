@@ -15,7 +15,7 @@
 #define IMAGE_REQUST_HEAD_SIZE sizeof(image_requst_protocol)
 
 enum label_type {REQUST_IMAGE, RESPONSE_IMAGE};
-enum image_type {NEW, OLD};
+enum image_type {NEW, OLD, INCRESS};
 
 typedef struct {
     uint32_t seq;
@@ -28,6 +28,7 @@ typedef struct {
         Point point;
         Rect image_size;
         ImageVal index_val;
+        int layer;
         uint32_t len;
     } BYTE_ALIGNED head;
     PPixelBGR data;

@@ -12,6 +12,7 @@
 #include "program_protocol.h"
 #include "../Image/ImageMesh.h"
 #include "protocols.h"
+#include "../Image/ImagePyrTree.h"
 
 #define PORT 1234
 #define MESSAGE_LEN 10240
@@ -90,20 +91,38 @@ void sever_transmission_proccess(int sockfd)
 
         encode_response_message = program_message_header.response_encode;
 
-        MeshHead **mesh_head_array = getShareMemory(encode_response_message.mesh_head_array_key);
+        //MeshHead **mesh_head_array = getShareMemory(encode_response_message.mesh_head_array_key);
+        ImagePyrDataType **pyramids_array = getShareMemory(encode_response_message.pyramids_key);
         ImageVal *mesh_mark = getShareMemory(encode_response_message.mesh_mark_key);
         Rect mesh_num_size = encode_response_message.mesh_num_size;
-        Rect mesh_size = encode_response_message.mesh_size;
-        if(!mesh_mark || !mesh_head_array)
+        //Rect mesh_size = encode_response_message.mesh_size;
+        if(!mesh_mark || !pyramids_array)
             break;
 
         image_response_message.head.seq = encode_response_message.seq;
-        image_response_message.head.image_size = mesh_size;
         for (int i = 0; i < mesh_num_size.height; i++) {
             for (int j = 0; j < mesh_num_size.width; j++) {
                 int index = i * mesh_num_size.width + j;
                 image_response_message.head.point = (Point) {.x = j, .y = i};
                 image_response_message.head.index_val = mesh_mark[index];
+                if (pyramids_array[index]) {
+                    image_response_message.head.image_size = pyramids_array[index]->image.size;
+                    if (mesh_mark[index].index != encode_response_message.curent_array_index)
+                        image_response_message.head.type = INCRESS;
+                    else
+                        image_response_message.head.type = NEW;
+                    image_response_message.head.layer = pyramids_array[index]->node_layer;
+                    image_response_message.data = pyramids_array[index]->image.data;
+                    image_response_message.head.len = PIXEL_LENGTHBGR(RECT_LENGTH(pyramids_array[index]->image.size));
+                } else {
+                    image_response_message.head.image_size = (Rect){0, 0};
+                    image_response_message.head.type = OLD;
+                    image_response_message.head.len = 0;
+                    image_response_message.head.layer = -1;
+                    image_response_message.data = NULL;
+                }
+
+/*                //加图像金字塔之前
                 if(mesh_mark[index].index != encode_response_message.curent_array_index) {
                     image_response_message.head.len = 0;
                     image_response_message.head.type = OLD;
@@ -116,7 +135,7 @@ void sever_transmission_proccess(int sockfd)
                     image_response_message.data = old_mesh.image.data;
                     image_response_message.head.type = NEW;
                     //printf("sever_transmission_proccess NEW %d %d\n", image_response_message.head.type, NEW);
-                }
+                }*/
 
                 label = RESPONSE_IMAGE;
                 int n_len = 0;
@@ -238,4 +257,5 @@ void client_transmission_proccess(int sockfd)
             break;
         }
     }
+    free(message);
 }

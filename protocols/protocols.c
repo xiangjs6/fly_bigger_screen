@@ -50,6 +50,9 @@ int image_response_head_to_net(image_response_protocol *in, void *out, size_t le
     ptr += sizeof(int32_t);
     *(int32_t*)ptr = htonl(in->head.index_val.h_mesh_point.y);
     ptr += sizeof(int32_t);
+    //金字塔层数
+    *(uint32_t*)ptr = htonl(in->head.layer);
+    ptr += sizeof(uint32_t);
     //数据长度
     *(uint32_t*)ptr = htonl(in->head.len);
     ptr += sizeof(uint32_t);
@@ -88,6 +91,9 @@ int net_to_image_head_response(void *in, size_t len, image_response_protocol *ou
     ptr += sizeof(int32_t);
     out->head.index_val.h_mesh_point.y = htonl(*(int32_t*)ptr);
     ptr += sizeof(int32_t);
+    //金字塔层数
+    out->head.layer = htonl(*(uint32_t*)ptr);
+    ptr += sizeof(uint32_t);
     //数据长度
     out->head.len = htonl(*(uint32_t*)ptr);
     ptr += sizeof(uint32_t);

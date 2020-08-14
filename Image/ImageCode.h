@@ -15,6 +15,9 @@ struct pyramid_code {
     struct pyramid_code *pre;
 };
 
+struct pyramid_code *creat_pyramid_node(struct pyramid_code **head);
+void del_pyramid_node(struct pyramid_code **head, struct pyramid_code *node);
+
 struct code_array_type {
     bool is_used;
     MeshHead *h_mesh;

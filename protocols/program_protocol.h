@@ -10,9 +10,10 @@
 struct encode_response_protocol {
     uint32_t seq;
     uint32_t mesh_mark_key;
-    uint32_t mesh_head_array_key;
+    uint32_t pyramids_key;
+    //uint32_t mesh_head_array_key;
     Rect mesh_num_size;
-    Rect mesh_size;
+    //Rect mesh_size;
     int curent_array_index;
 };
 

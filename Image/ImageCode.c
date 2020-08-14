@@ -48,6 +48,32 @@ void destory_code_array_type(struct code_array_type *p_code_array)
     free(p_code_array->pyramid_trees);
 }
 
+struct pyramid_code *creat_pyramid_node(struct pyramid_code **head)
+{
+    struct pyramid_code *node = malloc(sizeof(struct pyramid_code));
+    if (!node)
+        return node;
+    node->next = *head;
+    node->tree = initImagePyrTree(2);
+    node->pre = NULL;
+    if (*head)
+        (*head)->pre = node;
+    *head = node;
+    return node;
+}
+
+void del_pyramid_node(struct pyramid_code **head, struct pyramid_code *node)
+{
+    if (node->next)
+        node->next->pre = node->pre;
+    if (!node->pre)
+        *head = node->next;
+    else
+        node->pre->next = node->next;
+    destoryImagePyrTree(&node->tree);
+    free(node);
+}
+
 static void code_copy(LoopArrayDataType *src, LoopArrayDataType *dst)
 {
     //和外面交换内存地址，外面内存也必须是共享内存的地址。以后可能得改改
