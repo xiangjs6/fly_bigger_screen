@@ -75,7 +75,8 @@ void image_encode_proccess(int sockfd)
                         return;
                     //删除节点
                     struct pyramid_code *node = code_element.pyramid_trees[mesh_num_size.width * i + j];
-                    node->next->pre = node->pre;
+                    if (node->next)
+                        node->next->pre = node->pre;
                     if (!node->pre)
                         pyramids_link = node->next;
                     else
@@ -107,11 +108,12 @@ void image_encode_proccess(int sockfd)
                 ImageVal val = {.index = array_index, .h_mesh_point = (Point) {.x = j, .y = i}};
                 ImageVal old_val = val;
                 int res = putImageHashMap(&image_map, key, val, &old_val);
-                int index = mesh_num_size.width * old_val.h_mesh_point.y + old_val.h_mesh_point.x;
+                int old_index = mesh_num_size.width * old_val.h_mesh_point.y + old_val.h_mesh_point.x;
+                int index = mesh_num_size.width * i + j;
                 if (res == 1) {
                     struct code_array_type *old_element = getLoopArray(&loop_array, old_val.index).p_val;
-                    old_code_element.pyramid_trees[index] = old_element->pyramid_trees[index];
-                    old_element->mesh_updata_mark[index] = true;
+                    old_code_element.pyramid_trees[index] = old_element->pyramid_trees[old_index];
+                    old_element->mesh_updata_mark[old_index] = true;
                 } else if(res == 0) {
                     //创建节点，并入链表
                     struct pyramid_code *node = malloc(sizeof(struct pyramid_code));
@@ -121,7 +123,8 @@ void image_encode_proccess(int sockfd)
                     if (pyramids_link)
                         pyramids_link->pre = node;
                     pyramids_link = node;
-
+                    //生成图像金字塔
+                    imagePyramid(&node->tree, mesh->image);
                     old_code_element.pyramid_trees[index] = node;
                 } else
                     return;

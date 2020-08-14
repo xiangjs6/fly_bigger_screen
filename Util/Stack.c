@@ -29,7 +29,7 @@ void destoryStack(StackHead *stack)
 
 void cleanStack(StackHead *stack)
 {
-    while (stack->size--)
+    while (stack->size)
         popStack(stack, NULL);
 }
 
