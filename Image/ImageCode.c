@@ -26,10 +26,10 @@ int init_code_array_type(struct code_array_type *p_code_array)
         return -1;
     if(initShareMesh(p_mesh, mesh_num_size, mesh_size) < 0)
         return -1;
-    p_code_array->mesh_updata_mark = malloc(sizeof(bool) * RECT_LENGTH(p_mesh->size));
+    p_code_array->mesh_updata_mark = malloc(sizeof(char) * RECT_LENGTH(p_mesh->size));
     if(!p_code_array->mesh_updata_mark)
         return -1;
-    memset(p_code_array->mesh_updata_mark, false, sizeof(bool) * RECT_LENGTH(p_mesh->size));
+    memset(p_code_array->mesh_updata_mark, NOUPDATA, sizeof(char) * RECT_LENGTH(p_mesh->size));
     p_code_array->pyramid_trees = malloc(RECT_LENGTH(p_mesh->size) * sizeof(struct pyramid_code*));
     if (!p_code_array->pyramid_trees)
         return -1;
@@ -54,6 +54,7 @@ struct pyramid_code *creat_pyramid_node(struct pyramid_code **head)
     if (!node)
         return node;
     node->next = *head;
+    node->link_count = 0;
     node->tree = initImagePyrTree(2);
     node->pre = NULL;
     if (*head)
@@ -72,6 +73,17 @@ void del_pyramid_node(struct pyramid_code **head, struct pyramid_code *node)
         node->pre->next = node->next;
     destoryImagePyrTree(&node->tree);
     free(node);
+}
+
+struct pyramid_code *linkNode(struct pyramid_code *node)
+{
+    node->link_count++;
+    return node;
+}
+
+void unlinkNode(struct pyramid_code *node)
+{
+    node->link_count--;
 }
 
 static void code_copy(LoopArrayDataType *src, LoopArrayDataType *dst)

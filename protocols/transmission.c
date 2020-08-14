@@ -14,7 +14,7 @@
 #include "protocols.h"
 #include "../Image/ImagePyrTree.h"
 
-#define PORT 1234
+#define PORT 12345
 #define MESSAGE_LEN 10240
 
 static int init_sever_socket(void)
@@ -148,11 +148,13 @@ void sever_transmission_proccess(int sockfd)
                 n_len += n;
                 if (image_response_message.head.len != 0) {
                     memcpy(message + n_len, image_response_message.data, image_response_message.head.len);
+                    shareFree(pyramids_array[index]->image.data);
                     n_len += image_response_message.head.len;
                 }
                 //static int count = 0;
                 //printf("%d\n", n_len);
                 write(client_fd, message, n_len);
+                shareFree(pyramids_array[index]);
 
                 /*
                 struct image_response_protocol new_response_message;
@@ -160,6 +162,7 @@ void sever_transmission_proccess(int sockfd)
                 net_to_image_response(message, sizeof(message), &new_response_message);*/
             }
         }
+        shareFree(pyramids_array);
         shareFree(mesh_mark);
     }
 }
@@ -169,8 +172,7 @@ static int flow_statistics = 0;
 void client_transmission_proccess(int sockfd)
 {
     int sever_fd = init_client_socket();
-    ImageVal *mesh_mark;
-    MeshHead *mesh_head;
+    //MeshHead *mesh_head;
     Rect mesh_size;
     Rect mesh_num_size;
     struct program_protocol program_message_header;
@@ -190,9 +192,10 @@ void client_transmission_proccess(int sockfd)
         if(trans_len != sizeof(program_message_header) || program_message_header.protocol_label != REQUST_DECODE_IMAGE)
             continue;
 
-        mesh_mark = getShareMemory(program_message_header.requst_decode.mesh_mark_key);
-        mesh_head = getShareMemory(program_message_header.requst_decode.mesh_head_key);
-        mesh_size = program_message_header.requst_decode.mesh_size;
+        ImageVal *mesh_mark = getShareMemory(program_message_header.requst_decode.mesh_mark_key);
+        ImagePyrDataType **pyramids_array = getShareMemory(program_message_header.requst_decode.pyramids_key);
+        //mesh_head = getShareMemory(program_message_header.requst_decode.mesh_head_key);
+        //mesh_size = program_message_header.requst_decode.mesh_size;
         mesh_num_size = program_message_header.requst_decode.mesh_num_size;
         image_requst_message.seq = program_message_header.requst_decode.seq;
         label = REQUST_IMAGE;
@@ -207,7 +210,7 @@ void client_transmission_proccess(int sockfd)
         if (write(sever_fd, message, n_len) != n_len)
             break;
 
-        Mesh *mesh = mesh_head->mesh;
+        //Mesh *mesh = mesh_head->mesh;
         int num_size = RECT_LENGTH(mesh_num_size);
         flow_statistics = 0;
         for (int i = 0; i < num_size; i++) {
@@ -238,16 +241,26 @@ void client_transmission_proccess(int sockfd)
             int index = image_response_message.head.point.y * mesh_num_size.width +
                         image_response_message.head.point.x;
             mesh_mark[index] = image_response_message.head.index_val;
-            if(image_response_message.head.type == OLD)
+            if(image_response_message.head.type == OLD) {
+                pyramids_array[index] = NULL;
                 continue;
-            if (force_read(sever_fd, (char*)mesh[index].image.data, image_response_message.head.len) < 0) {
+            }
+
+            pyramids_array[index] = shareMalloc(sizeof(ImagePyrDataType), ANONYMOUS_KEY);
+            if (!pyramids_array[index])
+                return;
+            pyramids_array[index]->image.data = shareMalloc(image_response_message.head.len, ANONYMOUS_KEY);
+            if (!pyramids_array[index]->image.data)
+                return;
+            if (force_read(sever_fd, (char*)pyramids_array[index]->image.data, image_response_message.head.len) < 0) {
                 return;
             }
 
             flow_statistics += image_response_message.head.len;
+            pyramids_array[index]->image.size = image_response_message.head.image_size;
             //仅复制PImage参数
             //memcpy(mesh[index].image.data, message, trans_len);
-            mesh[index].image.size = mesh_size;
+            //mesh[index].image.size = mesh_size;
         }
         program_message_header.protocol_label = RESPONSE_DECODE_IMAGE;
         program_message_header.response_decode.seq = image_requst_message.seq;

@@ -24,20 +24,6 @@ void sig_hup(int signo)
     run = 0;
 }
 
-int init_socket(void)
-{
-    int sock_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    struct sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(12345);
-    addr.sin_addr.s_addr = INADDR_ANY;
-    bind(sock_fd, &addr, sizeof(addr));
-    listen(sock_fd, 2);
-    int fd = accept(sock_fd, NULL, NULL);
-    close(sock_fd);
-    return fd;
-}
-
 void sig_term(int signo)
 {
     destroyShareMemory();
@@ -67,7 +53,7 @@ int main(void)
 
     if (initShareMemory(1024000000) < 0)
         return -1;
-    if (pid != 0) {
+    if (pid == 0) {
         pid = fork();
         if (pid == 0) {
             printf("sever_transmission_proccess:%d\n", getpid());
@@ -80,7 +66,7 @@ int main(void)
         }
     } else {
         pid = fork();
-        if (pid != 0) {
+        if (pid == 0) {
             printf("client_transmission_proccess:%d\n", getpid());
             sleep(2);
             client_transmission_proccess(fd[0]);

@@ -24,8 +24,8 @@ extern Rect mesh_size;
 
 static PImage screen_image;
 static struct code_array_type code_element;
-static MeshHead *next_mesh;
 static LoopArrayHead loop_array;
+static struct pyramid_code *pyramids_link = NULL;
 
 static int init(void);
 static void destory(void);
@@ -47,16 +47,19 @@ void image_decode_proccess(int sockfd)
         ftime (&tstruct1);
         time (&ltime1);
 
+        MeshHead *next_mesh = code_element.h_mesh;
         ImageVal *mesh_mark = shareMalloc(RECT_LENGTH(next_mesh->size) * sizeof(ImageVal), AUTO_KEY);
         memset(mesh_mark, -1, sizeof(RECT_LENGTH(next_mesh->size)) * sizeof(ImageVal));
+        ImagePyrDataType **pyramids_array = shareMalloc(sizeof(ImagePyrDataType*) * RECT_LENGTH(mesh_num_size), AUTO_KEY);
         allocMeshFromBuff(next_mesh);
         //发出请求
         message.protocol_label = REQUST_DECODE_IMAGE;
         requst = &message.requst_decode;
         requst->seq = seq;
         requst->mesh_num_size = mesh_num_size;
-        requst->mesh_size = mesh_size;
-        requst->mesh_head_key = getShareKey(next_mesh);
+        //requst->mesh_size = mesh_size;
+        requst->pyramids_key = getShareKey(pyramids_array);
+        //requst->mesh_head_key = getShareKey(next_mesh);
         requst->mesh_mark_key = getShareKey(mesh_mark);
         //接受请求
         if (write(sockfd, &message, sizeof(message)) < 0)
@@ -65,10 +68,46 @@ void image_decode_proccess(int sockfd)
             break;
         if (trans_len != sizeof(message) || message.protocol_label != RESPONSE_DECODE_IMAGE)
             continue;
+
+        memset(code_element.mesh_updata_mark, NOUPDATA, sizeof(char) * RECT_LENGTH(mesh_num_size));
         //拼接图片
         for (int i = 0; i < mesh_num_size.height; i++) {
             for (int j = 0; j < mesh_num_size.width; j++) {
                 int index = i * mesh_num_size.width + j;
+                int old_index = mesh_mark[index].h_mesh_point.y * mesh_num_size.width + mesh_mark[index].h_mesh_point.x;
+                if (pyramids_array[index] == NULL) {
+                    //已经完成传输的节点
+                    struct code_array_type *old_element = getLoopArray(&loop_array, mesh_mark[index].index).p_val;
+                    Mesh *curent_mesh = getMeshHead(next_mesh, i, j);
+                    Mesh *old_mesh = getMeshHead(old_element->h_mesh,
+                                                 mesh_mark[index].h_mesh_point.y,
+                                                 mesh_mark[index].h_mesh_point.x);
+                    curent_mesh->point = (Point){.x = mesh_size.width * j, .y = mesh_size.height * i};
+                    imageCopy(curent_mesh->image, old_mesh->image, ORIGIN_POINT, ORIGIN_POINT, mesh_size);
+                    //将金字塔节点关联到新的数组元素中，然后从原始数组元素移除;
+                    code_element.pyramid_trees[index] = linkNode(old_element->pyramid_trees[old_index]);
+                    old_element->mesh_updata_mark[old_index] = UPDATA;
+                    //old_element->pyramid_trees[old_index] = NULL;
+                } else {
+                    Mesh *curent_mesh = getMeshHead(next_mesh, i, j);
+                    struct pyramid_code *node = NULL;
+                    if (seq % loop_array.size == mesh_mark[index].index) { //新节点
+                        node = creat_pyramid_node(&pyramids_link);
+                    } else { //增量节点
+                        struct code_array_type *old_element = getLoopArray(&loop_array, mesh_mark[index].index).p_val;
+                        node = old_element->pyramid_trees[old_index];
+                        old_element->mesh_updata_mark[old_index] = UPDATA;
+                        //old_element->pyramid_trees[old_index] = NULL;
+                    }
+                    if (putPyramid(&node->tree, *pyramids_array[index]) < 0)
+                        return;
+                    imageResize(node->tree.max_size_pyramid->image, curent_mesh->image, mesh_size);
+                    code_element.pyramid_trees[index] = linkNode(node);
+
+                    shareFree(pyramids_array[index]->image.data);
+                    shareFree(pyramids_array[index]);
+                }
+/*                //加入金字塔编码之前
                 if (seq % loop_array.size == mesh_mark[index].index)
                     continue;
                 struct code_array_type *old_element = getLoopArray(&loop_array, mesh_mark[index].index).p_val;
@@ -77,9 +116,10 @@ void image_decode_proccess(int sockfd)
                                              mesh_mark[index].h_mesh_point.y,
                                              mesh_mark[index].h_mesh_point.x);
                 curent_mesh->point = (Point){.x = mesh_size.width * j, .y = mesh_size.height * i};
-                imageCopy(curent_mesh->image, old_mesh->image, ORIGIN_POINT, ORIGIN_POINT, mesh_size);
+                imageCopy(curent_mesh->image, old_mesh->image, ORIGIN_POINT, ORIGIN_POINT, mesh_size);*/
             }
         }
+
         MeshtoImage(*next_mesh, screen_image);
 
         time (&ltime2);               // end time sec
@@ -89,9 +129,23 @@ void image_decode_proccess(int sockfd)
 
         //显示
         showImage(screen_image.data, RECT_LENGTH(screen_image.size));
+
+        code_element.is_used = true;
         pushLoopArray(&loop_array, (LoopArrayDataType) {.p_val = &code_element});
+        if (code_element.is_used) {
+            for (int i = 0; i < mesh_num_size.height; i++) {
+                for (int j = 0; j < mesh_num_size.width; j++) {
+                    int index = i * mesh_num_size.width + j;
+                    unlinkNode(code_element.pyramid_trees[index]);
+                    if (!code_element.pyramid_trees[index]->link_count)
+                        del_pyramid_node(&pyramids_link, code_element.pyramid_trees[index]);
+                    code_element.pyramid_trees[index] = NULL;
+                }
+            }
+        }
         seq++;
         shareFree(mesh_mark);
+        shareFree(pyramids_array);
         //usleep(16666);
         //sleep(1);
     }
@@ -104,7 +158,7 @@ static int init(void)
     mesh_size = (Rect){32, 16};
     if(init_code_array_type(&code_element) < 0)
         return -1;
-    next_mesh = code_element.h_mesh;
+
     loop_array = creatLoopArray(60, code_opts, NULL);
     if(!loop_array.array)
         return -1;

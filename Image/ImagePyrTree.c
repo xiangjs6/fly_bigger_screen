@@ -84,6 +84,8 @@ int putPyramid(ImagePyrTree *tree, ImagePyrDataType pyramid)
         image_pyr_size = new_image_pyr.image.size;
         int _res = putStack(&tree->stack, data);
 
+        for (int j = 0; j < 4; j++)
+            free(image_pyramid.image[j].data);
         free(new_image_pyr.image.data);
         if (_res < 0) {
             res = -2;
@@ -95,8 +97,8 @@ ret:
     switch (res)
     {
         case 1:
-            for (int k = 0; k < 4; k++)
-                free(all_pyramid[k].image.data);
+            /*for (int k = 0; k < 4; k++)
+                free(all_pyramid[k].image.data);*/
             break;
         case -1:
         case 2:
