@@ -111,12 +111,17 @@ int get_screen(void)
     }
 
     FD_SET(evdi_get_event_ready(device_h), &read_set);
-    while (!buff_flag && (n = select(evdi_get_event_ready(device_h) + 1, &read_set, NULL, NULL, NULL)) >= 0) {
+    struct timeval old_tv = {.tv_sec = 0, .tv_usec = 1000};
+    struct timeval tv = old_tv;
+    while (!buff_flag && (n = select(evdi_get_event_ready(device_h) + 1, &read_set, NULL, NULL, &tv)) >= 0) {
+        if (n == 0)
+            buff_flag = true;
         if(n > 0 && FD_ISSET(evdi_get_event_ready(device_h), &read_set)) {
             evdi_handle_events(device_h, &content);
         }
         printf("loop\n");
         FD_SET(evdi_get_event_ready(device_h), &read_set);
+        tv = old_tv;
     }
     return 0;
 }

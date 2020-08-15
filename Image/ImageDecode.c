@@ -83,9 +83,10 @@ void image_decode_proccess(int sockfd)
                                                  mesh_mark[index].h_mesh_point.y,
                                                  mesh_mark[index].h_mesh_point.x);
                     curent_mesh->point = (Point){.x = mesh_size.width * j, .y = mesh_size.height * i};
-                    imageCopy(curent_mesh->image, old_mesh->image, ORIGIN_POINT, ORIGIN_POINT, mesh_size);
-                    //将金字塔节点关联到新的数组元素中，然后从原始数组元素移除;
+                    //imageCopy(curent_mesh->image, old_mesh->image, ORIGIN_POINT, ORIGIN_POINT, mesh_size);
+                    //将金字塔节点关联到新的数组元素中;
                     code_element.pyramid_trees[index] = linkNode(old_element->pyramid_trees[old_index]);
+                    imageResize(code_element.pyramid_trees[index]->tree.max_size_pyramid->image, curent_mesh->image, mesh_size);
                     old_element->mesh_updata_mark[old_index] = UPDATA;
                     //old_element->pyramid_trees[old_index] = NULL;
                 } else {

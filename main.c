@@ -47,7 +47,7 @@ int main(void)
     imageCopy(d_image, image, (Point){0, 0}, (Point){0, 0}, d_image.size);
     return 0;*/
     int fd[2];
-    int pid = 1;
+    int pid = 0;
     pid = fork();
     socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
 
