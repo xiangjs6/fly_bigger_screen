@@ -227,7 +227,7 @@ static void destory(void)
     free(evdi_buff);
     destory_code_array_type(&code_element);
     destoryLoopArray(&loop_array);
-    shareFree(loop_array.array);
+    //shareFree(loop_array.array);
     destoryImageHashMap(&image_map);
 }
 

@@ -14,7 +14,7 @@
 #include "protocols.h"
 #include "../Image/ImagePyrTree.h"
 
-#define PORT 12345
+#define PORT 1234
 #define MESSAGE_LEN 10240
 
 static int init_sever_socket(void)
