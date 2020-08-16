@@ -14,7 +14,7 @@
 #include "protocols.h"
 #include "../Image/ImagePyrTree.h"
 
-#define PORT 1234
+#define PORT 12345
 #define MESSAGE_LEN 10240
 
 static int init_sever_socket(void)
@@ -75,10 +75,10 @@ void sever_transmission_proccess(int sockfd)
             break;
         getLabelFromNet(message, trans_len, &label);
 
-        if ((trans_len = force_read(client_fd, message, IMAGE_REQUST_HEAD_SIZE)) != IMAGE_REQUST_HEAD_SIZE)
-            break;
         if (label != REQUST_IMAGE)
             continue;
+        if ((trans_len = force_read(client_fd, message, IMAGE_REQUST_HEAD_SIZE)) != IMAGE_REQUST_HEAD_SIZE)
+            break;
         net_to_image_requst(message, trans_len, &image_requst_message);
 
         program_message_header.protocol_label = REQUST_ENCODE_IMAGE;
@@ -252,6 +252,7 @@ void client_transmission_proccess(int sockfd)
             pyramids_array[index]->image.data = shareMalloc(image_response_message.head.len, ANONYMOUS_KEY);
             if (!pyramids_array[index]->image.data)
                 return;
+            pyramids_array[index]->node_layer = image_response_message.head.layer;
             if (force_read(sever_fd, (char*)pyramids_array[index]->image.data, image_response_message.head.len) < 0) {
                 return;
             }
@@ -264,6 +265,8 @@ void client_transmission_proccess(int sockfd)
         }
         program_message_header.protocol_label = RESPONSE_DECODE_IMAGE;
         program_message_header.response_decode.seq = image_requst_message.seq;
+        program_message_header.response_decode.pyramids_key = getShareKey(pyramids_array);
+        program_message_header.response_decode.mesh_mark_key = getShareKey(mesh_mark);
         printf("flow:%.2fKB\n", ((float )flow_statistics) / 1024);
         //getchar();
         if (write(sockfd, &program_message_header, sizeof(program_message_header)) != sizeof(program_message_header)) {

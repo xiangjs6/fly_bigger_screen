@@ -32,6 +32,8 @@ struct encode_requst_protocol {
 
 struct decode_response_protocol {
     uint32_t seq;
+    uint32_t mesh_mark_key;
+    uint32_t pyramids_key;
 };
 
 struct program_protocol {

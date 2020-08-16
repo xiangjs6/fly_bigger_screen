@@ -35,6 +35,31 @@ void sig_term(int signo)
 #include "protocols/protocols.h"
 int main(void)
 {
+/*    initShareMemory(1024);
+    void *p = shareMalloc(100, 100);
+    int a = fork();
+    if (a) {
+        p = getShareMemory(100);
+        printf("parent a\n");
+        int count = 10000;
+        while (count--) {
+            p = getShareMemory(100);
+            //printf("p %p\n", p);
+        }
+        printf("parent over\n");
+    } else {
+        sleep(1);
+        p = getShareMemory(100);
+        printf("child a\n");
+        int count = 10000;
+        while (count--) {
+            p = getShareMemory(100);
+            //printf("c %p\n", p);
+        }
+        printf("child over\n");
+    }
+    sleep(2);
+    return 0;*/
 /*    Pixel data[] = {1, 1, 1, 1, 0, 0, 0, 0, 4, 4, 4, 4,\
                     2, 2, 2, 2, 3, 3, 3, 3, 5, 5, 5, 5};
     PImage image;

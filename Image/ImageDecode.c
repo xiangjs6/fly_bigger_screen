@@ -30,10 +30,12 @@ static struct pyramid_code *pyramids_link = NULL;
 static int init(void);
 static void destory(void);
 
+static int requst_image(int seq, int fd);
+
 void image_decode_proccess(int sockfd)
 {
     struct program_protocol message;
-    struct decode_requst_protocol *requst;
+    //struct decode_requst_protocol *requst;
     int trans_len;
     uint32_t seq = 0;
     if (init() < 0)
@@ -42,18 +44,19 @@ void image_decode_proccess(int sockfd)
     time_t ltime1, ltime2, tmp_time;
     struct timeb tstruct1, tstruct2;
 
+    if (requst_image(seq++, sockfd) < 0)
+        return;
     while (true)
     {
-        ftime (&tstruct1);
-        time (&ltime1);
 
         MeshHead *next_mesh = code_element.h_mesh;
-        ImageVal *mesh_mark = shareMalloc(RECT_LENGTH(next_mesh->size) * sizeof(ImageVal), AUTO_KEY);
+        /*ImageVal *mesh_mark = shareMalloc(RECT_LENGTH(next_mesh->size) * sizeof(ImageVal), AUTO_KEY);
         memset(mesh_mark, -1, sizeof(RECT_LENGTH(next_mesh->size)) * sizeof(ImageVal));
         ImagePyrDataType **pyramids_array = shareMalloc(sizeof(ImagePyrDataType*) * RECT_LENGTH(mesh_num_size), AUTO_KEY);
+        memset(pyramids_array, NULL, sizeof(ImagePyrDataType*) * RECT_LENGTH(mesh_num_size));*/
         allocMeshFromBuff(next_mesh);
         //发出请求
-        message.protocol_label = REQUST_DECODE_IMAGE;
+        /*message.protocol_label = REQUST_DECODE_IMAGE;
         requst = &message.requst_decode;
         requst->seq = seq;
         requst->mesh_num_size = mesh_num_size;
@@ -61,14 +64,20 @@ void image_decode_proccess(int sockfd)
         requst->pyramids_key = getShareKey(pyramids_array);
         //requst->mesh_head_key = getShareKey(next_mesh);
         requst->mesh_mark_key = getShareKey(mesh_mark);
-        //接受请求
+        //发送请求
         if (write(sockfd, &message, sizeof(message)) < 0)
-            break;
+            break;*/
         if ((trans_len = read(sockfd, &message, sizeof(message))) < 0)
             break;
         if (trans_len != sizeof(message) || message.protocol_label != RESPONSE_DECODE_IMAGE)
             continue;
+        int response_seq = message.response_decode.seq;
+        //再次请求
+        if (requst_image(seq++, sockfd) < 0)
+            break;
 
+        ImageVal *mesh_mark = getShareMemory(message.response_decode.mesh_mark_key);
+        ImagePyrDataType **pyramids_array = getShareMemory(message.response_decode.pyramids_key);
         memset(code_element.mesh_updata_mark, NOUPDATA, sizeof(char) * RECT_LENGTH(mesh_num_size));
         //拼接图片
         for (int i = 0; i < mesh_num_size.height; i++) {
@@ -79,9 +88,9 @@ void image_decode_proccess(int sockfd)
                     //已经完成传输的节点
                     struct code_array_type *old_element = getLoopArray(&loop_array, mesh_mark[index].index).p_val;
                     Mesh *curent_mesh = getMeshHead(next_mesh, i, j);
-                    Mesh *old_mesh = getMeshHead(old_element->h_mesh,
+                    /*Mesh *old_mesh = getMeshHead(old_element->h_mesh,
                                                  mesh_mark[index].h_mesh_point.y,
-                                                 mesh_mark[index].h_mesh_point.x);
+                                                 mesh_mark[index].h_mesh_point.x);*/
                     curent_mesh->point = (Point){.x = mesh_size.width * j, .y = mesh_size.height * i};
                     //imageCopy(curent_mesh->image, old_mesh->image, ORIGIN_POINT, ORIGIN_POINT, mesh_size);
                     //将金字塔节点关联到新的数组元素中;
@@ -92,7 +101,7 @@ void image_decode_proccess(int sockfd)
                 } else {
                     Mesh *curent_mesh = getMeshHead(next_mesh, i, j);
                     struct pyramid_code *node = NULL;
-                    if (seq % loop_array.size == mesh_mark[index].index) { //新节点
+                    if (response_seq % loop_array.size == mesh_mark[index].index) { //新节点
                         node = creat_pyramid_node(&pyramids_link);
                     } else { //增量节点
                         struct code_array_type *old_element = getLoopArray(&loop_array, mesh_mark[index].index).p_val;
@@ -102,6 +111,8 @@ void image_decode_proccess(int sockfd)
                     }
                     if (putPyramid(&node->tree, *pyramids_array[index]) < 0)
                         return;
+                    PImage a = node->tree.max_size_pyramid->image;
+                    PImage b = curent_mesh->image;
                     imageResize(node->tree.max_size_pyramid->image, curent_mesh->image, mesh_size);
                     code_element.pyramid_trees[index] = linkNode(node);
 
@@ -128,6 +139,9 @@ void image_decode_proccess(int sockfd)
         tmp_time = (ltime2 * 1000 + tstruct2.millitm) - (ltime1 * 1000 + tstruct1.millitm);
         printf("The difference is: %ld millitm\n",tmp_time);
 
+        ftime (&tstruct1);
+        time (&ltime1);
+
         //显示
         showImage(screen_image.data, RECT_LENGTH(screen_image.size));
 
@@ -144,7 +158,7 @@ void image_decode_proccess(int sockfd)
                 }
             }
         }
-        seq++;
+        //seq++;
         shareFree(mesh_mark);
         shareFree(pyramids_array);
         //usleep(16666);
@@ -175,4 +189,30 @@ static void destory(void)
     destory_code_array_type(&code_element);
     destoryLoopArray(&loop_array);
     free(screen_image.data);
+}
+
+static int requst_image(int seq, int fd)
+{
+    struct program_protocol message;
+    message.protocol_label = REQUST_DECODE_IMAGE;
+
+    ImageVal *mesh_mark = shareMalloc(RECT_LENGTH(mesh_num_size) * sizeof(ImageVal), AUTO_KEY);
+    if (!mesh_mark)
+        return -1;
+    memset(mesh_mark, -1, sizeof(RECT_LENGTH(mesh_num_size)) * sizeof(ImageVal));
+    ImagePyrDataType **pyramids_array = shareMalloc(sizeof(ImagePyrDataType*) * RECT_LENGTH(mesh_num_size), AUTO_KEY);
+    if (!pyramids_array) {
+        shareFree(mesh_mark);
+        return -1;
+    }
+    memset(pyramids_array, 0, sizeof(ImagePyrDataType*) * RECT_LENGTH(mesh_num_size));
+
+    struct decode_requst_protocol *requst = &message.requst_decode;
+    requst->seq = seq;
+    requst->mesh_num_size = mesh_num_size;
+    //requst->mesh_size = mesh_size;
+    requst->pyramids_key = getShareKey(pyramids_array);
+    //requst->mesh_head_key = getShareKey(next_mesh);
+    requst->mesh_mark_key = getShareKey(mesh_mark);
+    return write(fd, (char*)&message, sizeof(message));
 }
