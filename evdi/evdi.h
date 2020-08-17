@@ -6,5 +6,5 @@
 #define FLY_BIGGER_SCREEN_EVDI_H
 
 int init_evdi(void *buff);
-int get_screen(void);
+int get_screen(long int us);
 #endif //FLY_BIGGER_SCREEN_EVDI_H

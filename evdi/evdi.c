@@ -67,7 +67,7 @@ int init_evdi(void *in_buff)
     buff = in_buff;
     unsigned char edid[1024];
     int device = 2;
-    int fd = open("/home/xjs/target/bin/EDIDv2_1280x720", O_RDONLY);
+    int fd = open("/home/xjs/target/bin/EDIDv1_1600x900", O_RDONLY);
     ssize_t edid_size = read(fd, edid, sizeof(edid));
     close(fd);
 
@@ -89,8 +89,8 @@ int init_evdi(void *in_buff)
     device_h = evdi_open(device);
     evdi_connect(device_h, edid, edid_size, UINT_LEAST32_MAX);
 
-    struct evdi_buffer e_buff = {0, buff, 1280, 720, \
-                                    1280 * 4};
+    struct evdi_buffer e_buff = {0, buff, 1600, 900, \
+                                    1600 * 4};
     evdi_register_buffer(device_h, e_buff);
     //evdi_enable_cursor_events(device_h);
     //evdi_handle_events(device_h, &content);
@@ -98,7 +98,7 @@ int init_evdi(void *in_buff)
     return 0;
 }
 
-int get_screen(void)
+int get_screen(long int us)
 {
     fd_set read_set;
     int n = 0;
@@ -111,15 +111,15 @@ int get_screen(void)
     }
 
     FD_SET(evdi_get_event_ready(device_h), &read_set);
-    struct timeval old_tv = {.tv_sec = 0, .tv_usec = 1000};
+    struct timeval old_tv = {.tv_sec = 0, .tv_usec = us};
     struct timeval tv = old_tv;
-    while (!buff_flag && (n = select(evdi_get_event_ready(device_h) + 1, &read_set, NULL, NULL, &tv)) >= 0) {
+    struct timeval *p_tv = us == -1 ? NULL : &tv;
+    while (!buff_flag && (n = select(evdi_get_event_ready(device_h) + 1, &read_set, NULL, NULL, p_tv)) >= 0) {
         if (n == 0)
             buff_flag = true;
         if(n > 0 && FD_ISSET(evdi_get_event_ready(device_h), &read_set)) {
             evdi_handle_events(device_h, &content);
         }
-        printf("loop\n");
         FD_SET(evdi_get_event_ready(device_h), &read_set);
         tv = old_tv;
     }

@@ -113,10 +113,10 @@ void image_decode_proccess(int sockfd)
                 } else {
                     Mesh *curent_mesh = getMeshHead(next_mesh, i, j);
                     struct pyramid_code *node = NULL;
-                    if (response_seq % loop_array.size == mesh_mark[index].index) { //新节点
+                    struct code_array_type *old_element = getLoopArray(&loop_array, mesh_mark[index].index).p_val;
+                    if (response_seq % loop_array.size == mesh_mark[index].index && old_element->pyramid_trees[old_index] == NULL) { //新节点
                         node = creat_pyramid_node(&pyramids_link);
                     } else { //增量节点
-                        struct code_array_type *old_element = getLoopArray(&loop_array, mesh_mark[index].index).p_val;
                         node = old_element->pyramid_trees[old_index];
                         old_element->mesh_updata_mark[old_index] = UPDATA;
                         //old_element->pyramid_trees[old_index] = NULL;
@@ -180,14 +180,14 @@ void image_decode_proccess(int sockfd)
 static int init(void)
 {
     mesh_num_size = (Rect){40, 45};
-    mesh_size = (Rect){32, 16};
+    mesh_size = (Rect){40, 20};
     if(init_code_array_type(&code_element) < 0)
         return -1;
 
     loop_array = creatLoopArray(60, code_opts, NULL);
     if(!loop_array.array)
         return -1;
-    screen_image.size = (Rect){1280, 720};
+    screen_image.size = (Rect){1600, 900};
     screen_image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(screen_image.size)));
     if (!screen_image.data)
         return -1;

@@ -19,7 +19,7 @@
 
 static int init(void);
 static void destory(void);
-static void request_image(void);
+static void request_image(long int us);
 
 extern LoopArrayOpts code_opts;
 
@@ -45,6 +45,7 @@ void image_encode_proccess(int sockfd)
 
     time_t ltime1, ltime2, tmp_time;
     struct timeb tstruct1, tstruct2;
+    bool need_send = false;//用于标志是否还有数据需要继续传输
 
     while (true)
     {
@@ -55,7 +56,13 @@ void image_encode_proccess(int sockfd)
         if (message.protocol_label != REQUST_ENCODE_IMAGE)
             continue;
 
-        request_image();
+        if (need_send)
+            request_image(1000);
+        else
+            request_image(-1);
+
+        need_send = false;
+
         memset(code_element.mesh_updata_mark, NOUPDATA, sizeof(char) * RECT_LENGTH(mesh_num_size));
         ImagetoMesh(*next_mesh, screen_image);
 
@@ -179,6 +186,8 @@ void image_encode_proccess(int sockfd)
                 StackDataType data;
                 data.p_val = pyramids_array[index];
                 popStack(&old_code_element.pyramid_trees[index]->tree.stack, &data);
+                if (old_code_element.pyramid_trees[index]->tree.stack.size)
+                    need_send = true;
             }
         }
 
@@ -207,13 +216,13 @@ void image_encode_proccess(int sockfd)
 static int init(void)
 {
     mesh_num_size = (Rect){40, 45};
-    mesh_size = (Rect){32, 16};
+    mesh_size = (Rect){40, 20};
     pyramids_link = NULL;
 
-    screen_image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(((Rect){1280, 720}))));
+    screen_image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(((Rect){1600, 900}))));
     if(!screen_image.data)
         return -1;
-    screen_image.size = (Rect){1280, 720};
+    screen_image.size = (Rect){1600, 900};
 
     evdi_buff = malloc(PIXEL_LENGTHBGRA(RECT_LENGTH(screen_image.size)));
     if (!evdi_buff)
@@ -243,9 +252,9 @@ static void destory(void)
     destoryImageHashMap(&image_map);
 }
 
-static void request_image(void)
+static void request_image(long int us)
 {
-    get_screen();
+    get_screen(us);
     BGRA2BGR(evdi_buff, screen_image.data, RECT_LENGTH(screen_image.size));
 /*    char s[1024];
     sprintf(s, "/home/xjs/screen_picture/%d", count);
