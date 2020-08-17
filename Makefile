@@ -5,7 +5,7 @@ FLAG=-g
 NAME=$(wildcard *.c)
 TARGET_NAME=fly_bigger_screen
 LIB_PATH=.
-LIB_NAME_LIST=-levdi -lSDL
+LIB_NAME_LIST=-levdi -lSDL -lpthread
 TARGET=$(patsubst %.c, %, $(TARGET_NAME))
 
 $(TARGET):$(OBJS)
