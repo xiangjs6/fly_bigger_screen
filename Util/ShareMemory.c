@@ -5,7 +5,7 @@
 #include "ShareMemory.h"
 #include <pthread.h>
 #include <sys/mman.h>
-#include <semaphore.h>
+//#include <semaphore.h>
 
 struct MemInfo {
     size_t size;
@@ -86,14 +86,19 @@ void *shareMalloc(size_t size, uint32_t key)
                 goto ERR;
         }
         key = s_mem->auto_key--;
+    } else if (key >= IDENTIFICATION_MAX) {
+        if (findKey(key) != NULL)
+            goto ERR;
     }
+
     do {
         if(it_node->info.key == NO_USED_KEY && it_node->info.size >= new_size) {
-            if(!available_node || available_node->info.size > it_node->info.size)
-                available_node = it_node;
+            //if(!available_node || available_node->info.size > it_node->info.size)
+            available_node = it_node;
+            break;
         }
-        if(key != AUTO_KEY && key != ANONYMOUS_KEY && it_node->info.key == key)
-            goto ERR;
+/*        if(key != AUTO_KEY && key != ANONYMOUS_KEY && it_node->info.key == key)
+            goto ERR;*/
         it_node = it_node->next;
     } while(it_node != s_mem->head);
     if(!available_node)
@@ -109,7 +114,7 @@ void *shareMalloc(size_t size, uint32_t key)
     new_node->next->pre = new_node;
     available_node->next = new_node;
     new_node->pre = available_node;
-    available_node->next->pre = available_node;
+    //available_node->next->pre = available_node;
     available_node->info.size -= new_size;
 
     pthread_mutex_unlock(&s_mem->lock);
@@ -134,12 +139,12 @@ void shareFree(void *ptr)
     node->info.key = NO_USED_KEY;
 
     //必须先合并后面的节点，再合并前面节点
-    if (next_node->info.key == NO_USED_KEY && (char*)node->info.base + node->info.size == (void*)next_node) {
+    if (next_node->info.key == NO_USED_KEY && (char*)node->info.base + node->info.size == (char*)next_node) {
         node->info.size += next_node->info.size + NODE_SIZE;
         next_node->next->pre = node;
         node->next = next_node->next;
     }
-    if (pre_node->info.key == NO_USED_KEY && (char*)pre_node->info.base + pre_node->info.size == (void*)node) {
+    if (pre_node->info.key == NO_USED_KEY && (char*)pre_node->info.base + pre_node->info.size == (char*)node) {
         pre_node->info.size += node->info.size + NODE_SIZE;
         node->next->pre = pre_node;
         pre_node->next = node->next;
