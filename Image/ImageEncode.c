@@ -14,6 +14,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <memory.h>
+#include <sys/timeb.h>
+#include <time.h>
 
 static int init(void);
 static void destory(void);
@@ -41,6 +43,9 @@ void image_encode_proccess(int sockfd)
     struct program_protocol message;
     struct encode_response_protocol *response;
 
+    time_t ltime1, ltime2, tmp_time;
+    struct timeb tstruct1, tstruct2;
+
     while (true)
     {
         if (read(sockfd, &message, sizeof(message)) != sizeof(message)) {
@@ -63,6 +68,7 @@ void image_encode_proccess(int sockfd)
 
         code_element.is_used = true;
         int array_index = pushLoopArray(&loop_array, (LoopArrayDataType) {.p_val = &code_element});//将新数据和老数据进行了交换
+
         if (code_element.is_used) {
             for (int i = 0; i < next_mesh->size.height; i++) {
                 for (int j = 0; j < next_mesh->size.width; j++) {
@@ -95,7 +101,7 @@ void image_encode_proccess(int sockfd)
         }//if(new_array_type.is_used)
 
         //查看相同图片块
-        for (int i = 0; i < old_next_mesh.size.height; i++) {
+/*        for (int i = 0; i < old_next_mesh.size.height; i++) {
             for (int j = 0; j < old_next_mesh.size.width; j++) {
                 Mesh *mesh = getMeshHead(&old_next_mesh, i, j);
                 ImageKey key = {.key = mesh->image.data, .len = PIXEL_LENGTH(RECT_LENGTH(mesh->image.size))};
@@ -108,7 +114,7 @@ void image_encode_proccess(int sockfd)
                 }
                 mesh_mark[i * old_next_mesh.size.width + j] = val;
             }
-        }
+        }*/
 
         for (int i = 0; i < old_next_mesh.size.height; i++) {
             for (int j = 0; j < old_next_mesh.size.width; j++) {
@@ -117,18 +123,21 @@ void image_encode_proccess(int sockfd)
                 ImageVal val = {.index = array_index, .h_mesh_point = (Point) {.x = j, .y = i}};
                 ImageVal old_val = val; //这个old_val用来得到前一个ImageVal的值，并将前网格一个置为UPDATA
                 int res = putImageHashMap(&image_map, key, val, &old_val);
+
+                mesh_mark[i * old_next_mesh.size.width + j] = old_val;
+
                 int old_index = mesh_num_size.width * old_val.h_mesh_point.y + old_val.h_mesh_point.x;
                 int index = mesh_num_size.width * i + j;
-                if (res == 0 || array_index == mesh_mark[index].index) { //如果一次屏幕，则为每个图片都创建一个图像金字塔，最终只会留下一个
+                if (res == 0 /*|| array_index == mesh_mark[index].index*/) { //如果一次屏幕，则为每个图片都创建一个图像金字塔，最终只会留下一个
                     //创建节点，并入链表
                     struct pyramid_code *node = creat_pyramid_node(&pyramids_link);
                     old_code_element.pyramid_trees[index] = linkNode(node);
                     //生成图像金字塔
                     imagePyramid(&node->tree, mesh->image);
-                    if (res == 1) {
+                    /*if (res == 1) {
                         struct code_array_type *old_element = getLoopArray(&loop_array, old_val.index).p_val;
                         old_element->mesh_updata_mark[old_index] = SAME_SCREEN;
-                    }
+                    }*/
                 } else if(res == 1) {
                     struct code_array_type *old_element = getLoopArray(&loop_array, old_val.index).p_val;
                     old_code_element.pyramid_trees[index] = linkNode(old_element->pyramid_trees[old_index]);
@@ -182,6 +191,9 @@ void image_encode_proccess(int sockfd)
         //response->mesh_size = mesh_size;
         response->pyramids_key = getShareKey(pyramids_array);
         response->curent_array_index = array_index;
+
+
+
         write(sockfd, &message, sizeof(message));
 
         //sleep(1);

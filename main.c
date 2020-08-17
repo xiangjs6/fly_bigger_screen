@@ -32,51 +32,14 @@ void sig_term(int signo)
     exit(0);
 }
 
-#include "protocols/protocols.h"
 int main(void)
 {
-/*    initShareMemory(1024);
-    void *p = shareMalloc(100, 100);
-    int a = fork();
-    if (a) {
-        p = getShareMemory(100);
-        printf("parent a\n");
-        int count = 10000;
-        while (count--) {
-            p = getShareMemory(100);
-            //printf("p %p\n", p);
-        }
-        printf("parent over\n");
-    } else {
-        sleep(1);
-        p = getShareMemory(100);
-        printf("child a\n");
-        int count = 10000;
-        while (count--) {
-            p = getShareMemory(100);
-            //printf("c %p\n", p);
-        }
-        printf("child over\n");
-    }
-    sleep(2);
-    return 0;*/
-/*    Pixel data[] = {1, 1, 1, 1, 0, 0, 0, 0, 4, 4, 4, 4,\
-                    2, 2, 2, 2, 3, 3, 3, 3, 5, 5, 5, 5};
-    PImage image;
-    image.size = (Rect){3, 2};
-    image.data = data;
-    PImage d_image;
-    d_image.size = (Rect){2, 2};
-    Pixel d_data[4];
-    d_image.data = d_data;
-    imageCopy(d_image, image, (Point){0, 0}, (Point){0, 0}, d_image.size);
-    return 0;*/
     int fd[2];
     int pid = 0;
     pid = fork();
     socketpair(AF_UNIX, SOCK_STREAM, 0, fd);
 
-    if (initShareMemory(1024000000) < 0)
+    if (initShareMemory(1024 * 1024 * 10) < 0)
         return -1;
     if (pid == 0) {
         pid = fork();

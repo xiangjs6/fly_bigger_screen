@@ -49,11 +49,23 @@ void image_decode_proccess(int sockfd)
     while (true)
     {
 
+        struct code_array_type old_code_element = code_element;
         MeshHead *next_mesh = code_element.h_mesh;
-        /*ImageVal *mesh_mark = shareMalloc(RECT_LENGTH(next_mesh->size) * sizeof(ImageVal), AUTO_KEY);
-        memset(mesh_mark, -1, sizeof(RECT_LENGTH(next_mesh->size)) * sizeof(ImageVal));
-        ImagePyrDataType **pyramids_array = shareMalloc(sizeof(ImagePyrDataType*) * RECT_LENGTH(mesh_num_size), AUTO_KEY);
-        memset(pyramids_array, NULL, sizeof(ImagePyrDataType*) * RECT_LENGTH(mesh_num_size));*/
+
+        memset(code_element.mesh_updata_mark, NOUPDATA, sizeof(char) * RECT_LENGTH(mesh_num_size));
+        code_element.is_used = true;
+        pushLoopArray(&loop_array, (LoopArrayDataType) {.p_val = &code_element});
+        if (code_element.is_used) {
+            for (int i = 0; i < mesh_num_size.height; i++) {
+                for (int j = 0; j < mesh_num_size.width; j++) {
+                    int index = i * mesh_num_size.width + j;
+                    unlinkNode(code_element.pyramid_trees[index]);
+                    if (!code_element.pyramid_trees[index]->link_count)
+                        del_pyramid_node(&pyramids_link, code_element.pyramid_trees[index]);
+                    code_element.pyramid_trees[index] = NULL;
+                }
+            }
+        }
         allocMeshFromBuff(next_mesh);
         //发出请求
         /*message.protocol_label = REQUST_DECODE_IMAGE;
@@ -78,7 +90,7 @@ void image_decode_proccess(int sockfd)
 
         ImageVal *mesh_mark = getShareMemory(message.response_decode.mesh_mark_key);
         ImagePyrDataType **pyramids_array = getShareMemory(message.response_decode.pyramids_key);
-        memset(code_element.mesh_updata_mark, NOUPDATA, sizeof(char) * RECT_LENGTH(mesh_num_size));
+        //memset(old_code_element.mesh_updata_mark, NOUPDATA, sizeof(char) * RECT_LENGTH(mesh_num_size));
         //拼接图片
         for (int i = 0; i < mesh_num_size.height; i++) {
             for (int j = 0; j < mesh_num_size.width; j++) {
@@ -94,8 +106,8 @@ void image_decode_proccess(int sockfd)
                     curent_mesh->point = (Point){.x = mesh_size.width * j, .y = mesh_size.height * i};
                     //imageCopy(curent_mesh->image, old_mesh->image, ORIGIN_POINT, ORIGIN_POINT, mesh_size);
                     //将金字塔节点关联到新的数组元素中;
-                    code_element.pyramid_trees[index] = linkNode(old_element->pyramid_trees[old_index]);
-                    imageResize(code_element.pyramid_trees[index]->tree.max_size_pyramid->image, curent_mesh->image, mesh_size);
+                    old_code_element.pyramid_trees[index] = linkNode(old_element->pyramid_trees[old_index]);
+                    imageResize(old_code_element.pyramid_trees[index]->tree.max_size_pyramid->image, curent_mesh->image, mesh_size);
                     old_element->mesh_updata_mark[old_index] = UPDATA;
                     //old_element->pyramid_trees[old_index] = NULL;
                 } else {
@@ -111,10 +123,8 @@ void image_decode_proccess(int sockfd)
                     }
                     if (putPyramid(&node->tree, *pyramids_array[index]) < 0)
                         return;
-                    PImage a = node->tree.max_size_pyramid->image;
-                    PImage b = curent_mesh->image;
                     imageResize(node->tree.max_size_pyramid->image, curent_mesh->image, mesh_size);
-                    code_element.pyramid_trees[index] = linkNode(node);
+                    old_code_element.pyramid_trees[index] = linkNode(node);
 
                     shareFree(pyramids_array[index]->image.data);
                     shareFree(pyramids_array[index]);
@@ -145,7 +155,7 @@ void image_decode_proccess(int sockfd)
         //显示
         showImage(screen_image.data, RECT_LENGTH(screen_image.size));
 
-        code_element.is_used = true;
+/*        code_element.is_used = true;
         pushLoopArray(&loop_array, (LoopArrayDataType) {.p_val = &code_element});
         if (code_element.is_used) {
             for (int i = 0; i < mesh_num_size.height; i++) {
@@ -157,7 +167,7 @@ void image_decode_proccess(int sockfd)
                     code_element.pyramid_trees[index] = NULL;
                 }
             }
-        }
+        }*/
         //seq++;
         shareFree(mesh_mark);
         shareFree(pyramids_array);
