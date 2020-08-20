@@ -46,6 +46,7 @@ void destoryHashMap(HashMap *map);
 int putHashMapbyCode(HashMap *map, HashDataType key_val, uint32_t hash_code);
 int putHashMap(HashMap *map, HashDataType key_val);
 int getHashMap(HashMap *map, HashDataType *key_val);
+int addressHashMap(HashMap *map, HashKey key, HashNode **out);
 int delHashNodebyKey(HashMap *map, HashKey key);
 int delHashNodebyCode(HashMap *map, HashKey key, uint32_t hash_code);
 #endif //FLY_BIGGER_SCREEN_HASHMAP_H

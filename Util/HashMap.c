@@ -53,7 +53,7 @@ int putHashMapbyCode(HashMap *map, HashDataType key_val, uint32_t hash_code)
     HashNode *node = map->table[hash_code];
     while(node && map->opts.cmp(key_val.key, node->data.key))//寻找是否有key值一样,如果Hash冲撞太多，得改进hash算法和链表换二叉树
         node = node->next;
-    if(node){
+    if(node) {
         map->opts.copy(&key_val, &node->data);
         return 1;
     }
@@ -115,6 +115,32 @@ int delHashNodebyCode(HashMap *map, HashKey key, uint32_t hash_code)
     return 0;
 }
 
+int addressHashMap(HashMap *map, HashKey key, HashNode **out)
+{
+    uint32_t hash_code = map->opts.hash_code(map, key);
+    if(hash_code >= map->size)
+        return -1;
+    HashNode *node = map->table[hash_code];
+    while(node && map->opts.cmp(key, node->data.key))//寻找是否有key值一样,如果Hash冲撞太多，得改进hash算法和链表换二叉树
+        node = node->next;
+    if(node) {
+        *out = node;
+        return 1;
+    } else {
+        node = malloc(sizeof(HashNode));
+        if(!node)
+            return -1;
+        if(map->opts.malloc(&node->data) < 0) {
+            free(node);
+            return -1;
+        }
+        node->next = map->table[hash_code];
+        map->table[hash_code] = node;
+        *out = node;
+        return 0;
+    }
+}
+
 static uint32_t _def_hash_code(HashMap *map, HashKey key)
 {
     return key.key % map->size;
@@ -127,6 +153,10 @@ static int _def_cmp(HashKey key1, HashKey key2)
 
 static void _def_copy(HashDataType *src, HashDataType *dst) {*dst = *src;}
 
-static int _def_malloc(HashDataType *data) {return 0;}
+static int _def_malloc(HashDataType *data)
+{
+    data->val.val = 0;
+    return 0;
+}
 
 static void _def_free(HashDataType *data) {}
