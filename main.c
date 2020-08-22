@@ -32,8 +32,21 @@ void sig_term(int signo)
     exit(0);
 }
 
+int cmp(void *a, void *b)
+{
+    return *(int*)b - *(int*)a;
+}
+
 int main(void)
 {
+    HuffmanCode code;
+    HuffmanData data[] = {{.weight = 12, .value = 2}, {.weight = 4, .value = 6}, {.weight = 2, .value = 5}, {.weight = 10, .value = 20}, {.weight = 4, .value = 1}, {.weight = 9, .value = 0}, {.weight = 7, .value = -1}};
+    //int32_t a[] = {1, 2, 2, 3, 3, 3, 3, 3, 6, 7, 6, 6, 1, 1, 11, 12, 11, 43};
+    generateHuffmanCode(data, sizeof(data) / sizeof(HuffmanData), &code);
+    for (int i = 0; i < code.size; i++) {
+        printf("pos:%d val:%d weight:%d l_child:%d r_child:%d\n", i, code.tree[i].data.value, code.tree[i].data.weight, code.tree[i].children[0], code.tree[i].children[1]);
+    }
+    return 0;
     int fd[2];
     int pid = 0;
     pid = fork();

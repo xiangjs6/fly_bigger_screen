@@ -125,7 +125,7 @@ int addressHashMap(HashMap *map, HashKey key, HashNode **out)
         node = node->next;
     if(node) {
         *out = node;
-        return 1;
+        return 0;
     } else {
         node = malloc(sizeof(HashNode));
         if(!node)
@@ -134,10 +134,13 @@ int addressHashMap(HashMap *map, HashKey key, HashNode **out)
             free(node);
             return -1;
         }
+        HashDataType key_val = {.key = key, .val = 0};
+        map->opts.copy(&key_val, &node->data);
+
         node->next = map->table[hash_code];
         map->table[hash_code] = node;
         *out = node;
-        return 0;
+        return 1;
     }
 }
 

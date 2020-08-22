@@ -7,13 +7,22 @@
 
 #include "Util.h"
 
+typedef struct HuffmanData {
+    int32_t value;
+    int32_t weight;
+} HuffmanData;
+
 typedef struct HuffmanCode{
-    int *tree;
-    int size;
-    int root;
+    struct {
+        int32_t children[2];
+        HuffmanData data;
+    } *tree;
+    int32_t size;
 } HuffmanCode;
 
-int huffmanEnocde(void *data, int nmemb, size_t size, HuffmanCode *code, int (*count_func)(void *));
+//int generateHuffmanCode(void *data, int nmemb, size_t size, HuffmanCode *code, int (*count_func)(void *));
+int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanCode *code);
+int huffmanEnocde(void *data, size_t len, HuffmanCode *code);
 int huffmanDecode(void *data, size_t len, HuffmanCode *code);
 void destoryHuffmanCode(HuffmanCode **code);
 #endif //FLY_BIGGER_SCREEN_HUFFMAN_H

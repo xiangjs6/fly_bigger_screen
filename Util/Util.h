@@ -11,6 +11,8 @@
 #include "HashMap.h"
 #include "ShareMemory.h"
 #include "Stack.h"
+#include "Heap.h"
+#include "Huffman.h"
 
 #define BYTE_ALIGNED  __attribute__((packed, aligned(1)))
 #define SWAP(a, b) \
