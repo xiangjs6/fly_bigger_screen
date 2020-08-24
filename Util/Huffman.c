@@ -12,7 +12,8 @@ struct huffman_inner {
     int pos;
 };
 
-static int _cmpfunc (const void* a, const void* b);
+static int _cmpfunc(const void* a, const void* b);
+static int32_t _index_func(HuffmanData *data, size_t size);
 
 int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanTree *tree, size_t custom_len)
 {
@@ -26,6 +27,7 @@ int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanTree *tree, size_
     CreateHeap(node_arr, size, sizeof(*node_arr), _cmpfunc);
     int heap_size = size;
     int node_size = heap_size;
+    tree->leaf_size = size;
 
     tree->size = HUFFMAN_NODE_SIZE(node_size);
     int tree_index = 0;
@@ -79,16 +81,19 @@ int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanTree *tree, size_
     return 0;
 }
 
-void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len)
+void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len, int32_t(*index_func)(HuffmanData *, size_t))
 {
+    if (!index_func)
+        index_func = _index_func;
     for (int i = 0; i < tree->size; i++) {
         if (tree->tree[i].children[0] == -1 && tree->tree[i].children[1] == -1) {
             int node_index = i;
+            HuffmanCode *p_code = &code[index_func(&tree->tree[i].data, tree->leaf_size)];
             if (custom_len > 0)
-                memcpy(code->custom, tree->tree[i].data.custom, custom_len);
+                memcpy(p_code->custom, tree->tree[i].data.custom, custom_len);
             else
-                code->value = tree->tree[i].data.value;
-            char *ptr = code->code;
+                p_code->value = tree->tree[i].data.value;
+            char *ptr = p_code->code;
             while (node_index < tree->size - 1)
             {
                 int parent_index = tree->tree[node_index].parent;
@@ -97,15 +102,20 @@ void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len)
                 node_index = parent_index;
             }
             *ptr = '\0';
-            strrev(code->code);
-            code++;
+            strrev(p_code->code);
+            //code++;
         }
     }
 }
 
-int _cmpfunc (const void* a, const void* b)
+int _cmpfunc(const void* a, const void* b)
 {
     const struct huffman_inner *_a = a;
     const struct huffman_inner *_b = b;
     return (_b)->data.weight - (_a)->data.weight;
+}
+
+static int32_t _index_func(HuffmanData *data, size_t size)
+{
+    return data->value % size;
 }

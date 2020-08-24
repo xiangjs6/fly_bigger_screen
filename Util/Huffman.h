@@ -26,6 +26,7 @@ typedef struct HuffmanNode {
 typedef struct HuffmanTree {
     HuffmanNode *tree;
     int32_t size;
+    int32_t leaf_size;
 } HuffmanTree;
 
 typedef struct HuffmanCode {
@@ -38,7 +39,7 @@ typedef struct HuffmanCode {
 
 //int generateHuffmanCode(void *data, int nmemb, size_t size, HuffmanCode *code, int (*count_func)(void *));
 int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanTree *tree, size_t custom_len);
-void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len);
+void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len, int32_t(*index_func)(HuffmanData *, size_t));
 int huffmanEnocde(void *data, size_t len, HuffmanCode *code, void *out, size_t out_len);
 int huffmanDecode(void *data, size_t len, HuffmanCode *code);
 void destoryHuffmanCode(HuffmanTree **tree);
