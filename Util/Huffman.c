@@ -3,54 +3,22 @@
 //
 
 #include "Huffman.h"
+#include <memory.h>
+#include <string.h>
 
-#define HASH_SIZE 1024
 
 struct huffman_inner {
     HuffmanData data;
     int pos;
 };
 
-static int _def_count(void *ptr);
 static int _cmpfunc (const void* a, const void* b);
 
-int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanCode *code)
+int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanTree *tree, size_t custom_len)
 {
     if (size <= 0)
         return -1;
-    /*if (nmemb < 0 || size < 0)
-        return -1;
-    HashMap map = creatHashMap(HASH_SIZE, (HashDataOpts){NULL});
-    struct hash_val *node_arr = calloc(nmemb, sizeof(struct hash_val));
-    //HashNode *node_arr[nmemb];
-    //struct hash_val node_arr[14] = {};
-    if (!node_arr)
-        return -1;
-    int node_size = 0;
-    char *ptr = data;
-    if (!count_func)
-        count_func = _def_count;
-    for (int i = 0; i < nmemb; i++) {
-        int32_t value;
-        HashNode *node;
-        value = count_func(ptr);
-        switch (addressHashMap(&map, (HashKey){.key = value}, &node))
-        {
-            case 0:
-                break;
-            case 1:
-                node_arr[node_size].pos = -1;
-                node_arr[node_size++].node = node;
-                break;
-            case -1:
-                goto err;
-        }
-        node->data.val.val++;
-        ptr += size;
-    }*/
-    //node_arr = realloc(node_size, sizeof(HashNode*));
-    //struct huffman_inner *node_arr = calloc(size, sizeof(struct huffman_inner));
-    struct huffman_inner node_arr[7];
+    struct huffman_inner node_arr[size];
     for (int i = 0; i < size; i++) {
         node_arr[i].data = data[i];
         node_arr[i].pos = -1;
@@ -59,20 +27,21 @@ int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanCode *code)
     int heap_size = size;
     int node_size = heap_size;
 
-    code->tree = calloc(node_size * 2 - 1, sizeof(*code->tree));
-    code->size = node_size * 2 - 1;
+    tree->size = HUFFMAN_NODE_SIZE(node_size);
     int tree_index = 0;
-    if (!code->tree)
-        goto err;
 
     while (heap_size > 1)
     {
         int index_l = HeapPop(node_arr, heap_size, sizeof(*node_arr), _cmpfunc);
         int pos_l = node_arr[index_l].pos;
         if (pos_l == -1) {
-            code->tree[tree_index].data.value = node_arr[index_l].data.value;
-            code->tree[tree_index].data.weight = node_arr[index_l].data.weight;
-            code->tree[tree_index].children[0] = code->tree[tree_index].children[1] = -1;
+            if (custom_len > 0) {
+                tree->tree[tree_index].data.custom = malloc(custom_len);
+                memcpy(tree->tree[tree_index].data.custom, node_arr[index_l].data.custom, custom_len);
+            } else
+                tree->tree[tree_index].data.value = node_arr[index_l].data.value;
+            tree->tree[tree_index].data.weight = node_arr[index_l].data.weight;
+            tree->tree[tree_index].children[0] = tree->tree[tree_index].children[1] = -1;
             pos_l = node_arr[index_l].pos = tree_index;
             tree_index++;
         }
@@ -80,18 +49,24 @@ int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanCode *code)
         int index_r = HeapPop(node_arr, heap_size - 1, sizeof(*node_arr), _cmpfunc);
         int pos_r = node_arr[index_r].pos;
         if (pos_r == -1) {
-            code->tree[tree_index].data.value = node_arr[index_r].data.value;
-            code->tree[tree_index].data.weight = node_arr[index_r].data.weight;
-            code->tree[tree_index].children[0] = code->tree[tree_index].children[1] = -1;
+            if (custom_len > 0) {
+                tree->tree[tree_index].data.custom = malloc(custom_len);
+                memcpy(tree->tree[tree_index].data.custom, node_arr[index_r].data.custom, custom_len);
+            } else
+                tree->tree[tree_index].data.value = node_arr[index_r].data.value;
+            tree->tree[tree_index].data.weight = node_arr[index_r].data.weight;
+            tree->tree[tree_index].children[0] = tree->tree[tree_index].children[1] = -1;
             pos_r = node_arr[index_r].pos = tree_index;
             tree_index++;
         }
 
-        code->tree[tree_index].children[0] = pos_l;
-        code->tree[tree_index].children[1] = pos_r;
-        code->tree[tree_index].data.weight = code->tree[pos_l].data.weight + code->tree[pos_r].data.weight;
-        code->tree[tree_index].data.value = -1;
-        node_arr[index_r].data.weight = code->tree[tree_index].data.weight;
+        tree->tree[tree_index].children[0] = pos_l;
+        tree->tree[pos_l].parent = tree_index;
+        tree->tree[tree_index].children[1] = pos_r;
+        tree->tree[pos_r].parent = tree_index;
+        tree->tree[tree_index].data.weight = tree->tree[pos_l].data.weight + tree->tree[pos_r].data.weight;
+        tree->tree[tree_index].data.value = -1;
+        node_arr[index_r].data.weight = tree->tree[tree_index].data.weight;
         node_arr[index_r].data.value = -1;
         node_arr[index_r].pos = tree_index;
         SWAP(node_arr[index_r], node_arr[0]);
@@ -101,22 +76,36 @@ int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanCode *code)
         heap_size--;
     }
 
-    //free(node_arr);
     return 0;
-    err:
-    free(node_arr);
-    free(code->tree);
-    return -1;
 }
 
-static int _def_count(void *ptr)
+void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len)
 {
-    return *(int32_t *)ptr;
+    for (int i = 0; i < tree->size; i++) {
+        if (tree->tree[i].children[0] == -1 && tree->tree[i].children[1] == -1) {
+            int node_index = i;
+            if (custom_len > 0)
+                memcpy(code->custom, tree->tree[i].data.custom, custom_len);
+            else
+                code->value = tree->tree[i].data.value;
+            char *ptr = code->code;
+            while (node_index < tree->size - 1)
+            {
+                int parent_index = tree->tree[node_index].parent;
+                *ptr = tree->tree[parent_index].children[0] == node_index ? '0' : '1';
+                ptr++;
+                node_index = parent_index;
+            }
+            *ptr = '\0';
+            strrev(code->code);
+            code++;
+        }
+    }
 }
 
 int _cmpfunc (const void* a, const void* b)
 {
-    struct huffman_inner *_a = a;
-    struct huffman_inner *_b = b;
+    const struct huffman_inner *_a = a;
+    const struct huffman_inner *_b = b;
     return (_b)->data.weight - (_a)->data.weight;
 }

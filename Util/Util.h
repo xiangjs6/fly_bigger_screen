@@ -25,6 +25,7 @@ do {\
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 uint16_t checksum(uint16_t *data, size_t len);
+char *strrev(char *s);
 
 typedef unsigned char byte;
 #endif //FLY_BIGGER_SCREEN_UTIL_H
