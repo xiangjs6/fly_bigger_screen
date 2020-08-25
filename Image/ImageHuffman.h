@@ -7,5 +7,5 @@
 
 #include "PImage.h"
 int ImageHuffmanEncode(PImage image, HuffmanTree *tree, void *out, size_t *len);
-void ImageHuffmanDecode(void *code, size_t len, HuffmanTree *tree, PImage *out);
+void ImageHuffmanDecode(void *code, HuffmanTree *tree, PImage *out);
 #endif //FLY_BIGGER_SCREEN_IMAGEHUFFMAN_H

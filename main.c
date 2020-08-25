@@ -47,7 +47,7 @@ int main(void)
     PImage image2;
     image2.data = malloc(PIXEL_LENGTH(RECT_LENGTH(((Rect){ 1280, 720}))));
     image2.size = (Rect){ 1280, 720};
-    ImageHuffmanDecode(out, len, &tree, &image2);
+    ImageHuffmanDecode(out, &tree, &image2);
     initDebug();
     showImage(image2.data, RECT_LENGTH(image2.size));
     int a = memcmp(image2.data, image.data, PIXEL_LENGTH(RECT_LENGTH(image.size)));

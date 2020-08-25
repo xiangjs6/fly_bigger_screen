@@ -54,7 +54,7 @@ int ImageHuffmanEncode(PImage image, HuffmanTree *tree, void *out, size_t *len)
     return pos;
 }
 
-void ImageHuffmanDecode(void *code, size_t len, HuffmanTree *tree, PImage *out)
+void ImageHuffmanDecode(void *code, HuffmanTree *tree, PImage *out)
 {
     int pos = 0;
     char *ptr = code;
