@@ -22,10 +22,12 @@ do {\
     (b) = _temp;\
 } while(0)
 
+#define SET_BIT(v, b, pos) ((v) |= ((0x1 & b) << pos))
+#define GET_BIT(v, pos) (((v) >> (pos)) & 0x1)
+
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 uint16_t checksum(uint16_t *data, size_t len);
 char *strrev(char *s);
-
 typedef unsigned char byte;
 #endif //FLY_BIGGER_SCREEN_UTIL_H

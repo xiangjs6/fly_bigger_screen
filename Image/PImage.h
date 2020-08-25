@@ -46,6 +46,7 @@ typedef struct {
     int32_t y;
 } Point;
 
+#define PIXEL_DEPTH 256
 #define PIXEL_LENGTHBGR(n) (n) * sizeof(PixelBGR)
 #define PIXEL_LENGTHBGRA(n) (n) * sizeof(PixelBGRA)
 

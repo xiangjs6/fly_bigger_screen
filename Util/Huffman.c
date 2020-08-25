@@ -13,12 +13,10 @@ struct huffman_inner {
 };
 
 static int _cmpfunc(const void* a, const void* b);
-static int32_t _index_func(HuffmanData *data, size_t size);
+static HuffmanCode *_index_func(HuffmanData *data, void *code, size_t leaf_size);
 
-int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanTree *tree, size_t custom_len)
+void generateHuffmanTree(HuffmanData *data, size_t size, HuffmanTree *tree, size_t custom_len)
 {
-    if (size <= 0)
-        return -1;
     struct huffman_inner node_arr[size];
     for (int i = 0; i < size; i++) {
         node_arr[i].data = data[i];
@@ -77,18 +75,16 @@ int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanTree *tree, size_
 
         heap_size--;
     }
-
-    return 0;
 }
 
-void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len, int32_t(*index_func)(HuffmanData *, size_t))
+void HuffmanTreeToCode(HuffmanTree *tree, void *code, size_t custom_len, HuffmanCode *(*index_func)(HuffmanData *, void *, size_t))
 {
     if (!index_func)
         index_func = _index_func;
     for (int i = 0; i < tree->size; i++) {
         if (tree->tree[i].children[0] == -1 && tree->tree[i].children[1] == -1) {
             int node_index = i;
-            HuffmanCode *p_code = &code[index_func(&tree->tree[i].data, tree->leaf_size)];
+            HuffmanCode *p_code = index_func(&tree->tree[i].data, code, tree->leaf_size);
             if (custom_len > 0)
                 memcpy(p_code->custom, tree->tree[i].data.custom, custom_len);
             else
@@ -103,7 +99,6 @@ void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len, 
             }
             *ptr = '\0';
             strrev(p_code->code);
-            //code++;
         }
     }
 }
@@ -115,7 +110,7 @@ int _cmpfunc(const void* a, const void* b)
     return (_b)->data.weight - (_a)->data.weight;
 }
 
-static int32_t _index_func(HuffmanData *data, size_t size)
+static HuffmanCode *_index_func(HuffmanData *data, void *code, size_t leaf_size)
 {
-    return data->value % size;
+    return &((HuffmanCode*)code)[data->value];
 }

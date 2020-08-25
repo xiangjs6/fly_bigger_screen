@@ -16,6 +16,7 @@
 #include "protocols/transmission.h"
 #include <signal.h>
 #include "Image/ImagePyrTree.h"
+#include "Image/ImageHuffman.h"
 
 
 int run = 1;
@@ -32,14 +33,28 @@ void sig_term(int signo)
     exit(0);
 }
 
-int cmp(void *a, void *b)
-{
-    return *(int*)b - *(int*)a;
-}
-
 int main(void)
 {
+    PImage image;
+    image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(((Rect){ 1280, 720}))));
+    openImage(&image, "/home/xjs/screen_picture/15");
     HuffmanTree tree;
+    char *out = malloc(PIXEL_LENGTH(RECT_LENGTH(((Rect){ 1280, 720}))));
+    size_t len = PIXEL_LENGTH(RECT_LENGTH(((Rect){ 1280, 720})));
+    size_t old_len = len;
+    ImageHuffmanEncode(image, &tree, out, &len);
+    printf("old_len:%d len:%d diff:%d rat:%f\n", old_len, len, old_len - len, (double)len / old_len);
+    PImage image2;
+    image2.data = malloc(PIXEL_LENGTH(RECT_LENGTH(((Rect){ 1280, 720}))));
+    image2.size = (Rect){ 1280, 720};
+    ImageHuffmanDecode(out, len, &tree, &image2);
+    initDebug();
+    showImage(image2.data, RECT_LENGTH(image2.size));
+    int a = memcmp(image2.data, image.data, PIXEL_LENGTH(RECT_LENGTH(image.size)));
+    printf("%d\n", a);
+    getchar();
+    return 0;
+/*    HuffmanTree tree;
     HuffmanData data[] = {{.weight = 12, .value = 0}, {.weight = 4, .value = 1}, {.weight = 2, .value = 2}, {.weight = 10, .value = 3}, {.weight = 4, .value = 4}, {.weight = 9, .value = 5}, {.weight = 7, .value = 6}};
     //int32_t a[] = {1, 2, 2, 3, 3, 3, 3, 3, 6, 7, 6, 6, 1, 1, 11, 12, 11, 43};
     tree.tree = malloc(sizeof(HuffmanNode) * HUFFMAN_NODE_SIZE(sizeof(data) / sizeof(HuffmanData)));
@@ -51,7 +66,7 @@ int main(void)
     for (int i = 0; i < sizeof(data) / sizeof(HuffmanData); i++)
         code[i].code = malloc(sizeof(data) / sizeof(HuffmanData));
     HuffmanTreeToCode(&tree, code, 0, NULL);
-    return 0;
+    return 0;*/
     int fd[2];
     int pid = 0;
     pid = fork();

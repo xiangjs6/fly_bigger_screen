@@ -8,6 +8,7 @@
 #include "Util.h"
 
 #define HUFFMAN_NODE_SIZE(n) (((n) * 2) - 1)
+#define CODE_LENGTH 32
 
 typedef struct HuffmanData {
     union {
@@ -34,13 +35,10 @@ typedef struct HuffmanCode {
         int32_t value;
         void *custom;
     };
-    char *code;
+    char code[CODE_LENGTH];
 } HuffmanCode;
 
 //int generateHuffmanCode(void *data, int nmemb, size_t size, HuffmanCode *code, int (*count_func)(void *));
-int generateHuffmanCode(HuffmanData *data, size_t size, HuffmanTree *tree, size_t custom_len);
-void HuffmanTreeToCode(HuffmanTree *tree, HuffmanCode *code, size_t custom_len, int32_t(*index_func)(HuffmanData *, size_t));
-int huffmanEnocde(void *data, size_t len, HuffmanCode *code, void *out, size_t out_len);
-int huffmanDecode(void *data, size_t len, HuffmanCode *code);
-void destoryHuffmanCode(HuffmanTree **tree);
+void generateHuffmanTree(HuffmanData *data, size_t size, HuffmanTree *tree, size_t custom_len);
+void HuffmanTreeToCode(HuffmanTree *tree, void *code, size_t custom_len, HuffmanCode *(*index_func)(HuffmanData *, void *, size_t));
 #endif //FLY_BIGGER_SCREEN_HUFFMAN_H
