@@ -14,7 +14,7 @@ int initDebug(void)
 {
     if (SDL_Init( SDL_INIT_EVERYTHING ) < 0)
         return -1;
-    screen = SDL_SetVideoMode( 1280, 720, 32, SDL_SWSURFACE );
+    screen = SDL_SetVideoMode( 1600, 900, 32, SDL_SWSURFACE );
     if(screen == NULL)
         return -1;
     return 0;
@@ -45,7 +45,7 @@ void writetofile(PImage image)
 
 void openImage(PImage *image, char *path)
 {
-    Rect size = {.width = 1280, .height = 720};
+    Rect size = {.width = 1600, .height = 900};
     image->size = size;
     void *buff = malloc(PIXEL_LENGTHBGRA(RECT_LENGTH(size)));
     int fd = open(path, O_RDWR);

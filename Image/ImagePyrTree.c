@@ -43,12 +43,12 @@ int imagePyramid(ImagePyrTree *tree, PImage image)
 int putPyramid(ImagePyrTree *tree, ImagePyrDataType pyramid)
 {
     int cur_index = pyramid.node_layer;
-    int i = 4, res = 0;
+    int i = 0, res = 0;
     int max_size_layer = tree->max_size_pyramid == NULL ? -1 : tree->max_size_pyramid->node_layer;
     StackDataType data;
     ImagePyramid image_pyramid;
     ImagePyrDataType all_pyramid[4];
-    memset(all_pyramid, 0, sizeof(pyramid.image));
+    memset(all_pyramid, 0, sizeof(all_pyramid));
     ImagePyrDataType new_image_pyr;
 
     image_pyr_size = pyramid.image.size;
@@ -61,7 +61,7 @@ int putPyramid(ImagePyrTree *tree, ImagePyrDataType pyramid)
         for (i = 0; i < 4; i++) {
             ImagePyrDataType *p_pyr = getStack(&tree->stack, STACK_TOP)->p_val;
             all_pyramid[i].image.size = p_pyr->image.size;
-            if (!all_pyramid[i].image.data)
+            if (all_pyramid[i].image.data)
                 free(all_pyramid[i].image.data);
             all_pyramid[i].image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(p_pyr->image.size)));
             if (!all_pyramid[i].image.data) {

@@ -35,7 +35,7 @@ void sig_term(int signo)
 
 int main(void)
 {
-    PImage image;
+/*    PImage image;
     image.data = malloc(PIXEL_LENGTH(RECT_LENGTH(((Rect){ 1280, 720}))));
     openImage(&image, "/home/xjs/screen_picture/15");
     HuffmanTree tree;
@@ -53,7 +53,7 @@ int main(void)
     int a = memcmp(image2.data, image.data, PIXEL_LENGTH(RECT_LENGTH(image.size)));
     printf("%d\n", a);
     getchar();
-    return 0;
+    return 0;*/
 /*    HuffmanTree tree;
     HuffmanData data[] = {{.weight = 12, .value = 0}, {.weight = 4, .value = 1}, {.weight = 2, .value = 2}, {.weight = 10, .value = 3}, {.weight = 4, .value = 4}, {.weight = 9, .value = 5}, {.weight = 7, .value = 6}};
     //int32_t a[] = {1, 2, 2, 3, 3, 3, 3, 3, 6, 7, 6, 6, 1, 1, 11, 12, 11, 43};
