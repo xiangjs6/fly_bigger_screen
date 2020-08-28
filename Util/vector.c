@@ -6,7 +6,7 @@
 #include "Util.h"
 #include <memory.h>
 
-#define STEP 1
+#define STEP 2048
 
 static int push_back(void *);
 static void pop_back(void);
