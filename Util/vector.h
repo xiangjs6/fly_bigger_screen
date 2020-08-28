@@ -28,6 +28,7 @@ typedef struct {
     void *(*end)(void);
     size_t (*size)(void);
     bool (*empty)(void);
+    void *(*extend)(int);
 } vector;
 
 int init_vector(vector *p_vector, size_t nmemb, size_t memb_size, void *array);

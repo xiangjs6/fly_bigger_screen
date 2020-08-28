@@ -6,7 +6,7 @@
 #include "Util.h"
 #include <memory.h>
 
-#define STEP 2048
+#define STEP 1
 
 static int push_back(void *);
 static void pop_back(void);
@@ -18,6 +18,7 @@ static void *begin(void);
 static void *end(void);
 static size_t size(void);
 static bool empty(void);
+static void *extend(int);
 
 static const vector vector_template = {
         //member
@@ -37,7 +38,8 @@ static const vector vector_template = {
         .begin = begin,
         .end = end,
         .size = size,
-        .empty = empty
+        .empty = empty,
+        .extend = extend
 };
 
 int init_vector(vector *p_vector, size_t nmemb, size_t memb_size, void *array)
@@ -162,4 +164,22 @@ static bool empty(void)
 {
     vector *this = *pthis();
     return this->_nmemb;
+}
+
+static void *extend(int nmemb)
+{
+    vector *this = *pthis();
+    size_t new_size = this->_memb_size * (nmemb + this->_nmemb);
+    if (this->_len < new_size) {
+        size_t step = (nmemb / STEP + 1) * STEP;
+        this->_len += step * this->_memb_size;
+        this->_begin = realloc(this->_begin, this->_len);
+        if (!this->_begin)
+            return NULL;
+        this->_end = this->_begin + this->_len;
+    }
+    void *ptr = this->_begin + this->_nmemb * this->_memb_size;
+    this->_nmemb += nmemb;
+    this->_next = this->_begin + this->_memb_size * this->_nmemb;
+    return ptr;
 }
