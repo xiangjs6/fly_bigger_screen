@@ -3,6 +3,7 @@
 //
 
 #include "Util.h"
+#include <pthread.h>
 
 uint16_t checksum(uint16_t *data, size_t len)
 {
@@ -40,4 +41,23 @@ char *strrev(char *s)
     }
 
     return(s);
+}
+
+static pthread_key_t key;
+static pthread_once_t key_once = PTHREAD_ONCE_INIT;
+static void make_key()
+{
+    pthread_key_create(&key, NULL);
+}
+
+void **pthis()
+{
+    void **ptr;
+    pthread_once(&key_once, make_key);
+    if ((ptr = pthread_getspecific(key)) == NULL)
+    {
+        ptr = malloc(sizeof(void*));
+        pthread_setspecific(key, ptr);
+    }
+    return ptr;
 }
