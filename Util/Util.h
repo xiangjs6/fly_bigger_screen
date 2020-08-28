@@ -33,6 +33,6 @@ uint16_t checksum(uint16_t *data, size_t len);
 char *strrev(char *s);
 typedef unsigned char byte;
 
-void **pthis();
+void **pthis(void);
 #define THIS(p) ((*(typeof(p)*)((*pthis()) = &p)))
 #endif //FLY_BIGGER_SCREEN_UTIL_H

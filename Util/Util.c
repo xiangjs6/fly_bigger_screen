@@ -45,12 +45,12 @@ char *strrev(char *s)
 
 static pthread_key_t key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-static void make_key()
+static void make_key(void)
 {
-    pthread_key_create(&key, NULL);
+    pthread_key_create(&key, free);
 }
 
-void **pthis()
+void **pthis(void)
 {
     void **ptr;
     pthread_once(&key_once, make_key);
