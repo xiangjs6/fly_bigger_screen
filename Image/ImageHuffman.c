@@ -35,7 +35,6 @@ int ImageHuffmanEncode(PImage image, HuffmanTree *tree, void *out, size_t *len)
     if (!tree->tree)
         return -1;
     generateHuffmanTree(data, data_index, tree, 0);
-    HuffmanNode t = tree->tree[tree->size - 1];
     HuffmanTreeToCode(tree, code, 0, NULL);
 
     char *ptr = out;
