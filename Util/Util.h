@@ -34,5 +34,5 @@ char *strrev(char *s);
 typedef unsigned char byte;
 
 void **pthis(void);
-#define THIS(p) ((*(typeof(p)*)((*pthis()) = &p)))
+#define THIS(p) ((*(typeof(p))((*pthis()) = p)))
 #endif //FLY_BIGGER_SCREEN_UTIL_H
